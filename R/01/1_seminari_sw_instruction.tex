@@ -1,0 +1,234 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 1st seminar}
+\end{center}\vspace{0.3cm}
+%
+\textbf{download \rr:} http://www.r-project.org/\\
+\textbf{user interface for R}: http://www.rstudio.com/\\
+\textbf{An R Introduction to Statistics}: http://www.r-tutor.com/\\[1.5ex]
+1)set working directory, 2)check files in working directory, 3)load the data, 4)find out the names of variables, 5)check  variable classes \\*[2ex]
+1) {\f setwd("C:/.../seminars/1\_seminar")}\\
+2) {\f dir()}\\
+3) {\f load("Movies.RData")}\\
+4) {\f names(Movies)}\\
+5) {\f lapply(Movies,class)}
+%
+\newpage
+%
+\nav
+\tb\underline{Frequency tables}\\
+absolute frequencies for the variable \textit{fMovie}: {\f table(Movies\$fMovie)} \\
+absolute frequencies for all variables {\f lapply(Movies,table)}\\
+relative frequencies for the variable \textit{fMovie}: {\f prop.table(table(Movies\$fMovie))} \\
+relative frequencies for all variables: {\f lapply(Movies,function(my)\{prop.table(table(my))\})} \\
+absolute frequencies for the variable \textit{fMovie} separately for man and woman: \newline\hspace*{2ex} {\f tapply(Movies\$fMovie,Movies\$fMan,table)  }\\[0.1ex]
+relative frequencies for the variable \textit{fMovie} separately for man and woman: \newline\hspace*{2ex} {\f tapply(Movies\$fMovie,Movies\$fMan,FUN=function(my){prop.table(table(my))}) }\\[0.1ex]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\tb\underline{Descriptive statistics}\\
+common descriptive statistics for the variable \textit{Movie}:\\
+{\f mean(Movies\$Movie, na.rm=TRUE)} \\
+{\f median(Movies\$Movie, na.rm=TRUE)} \\
+{\f quantile(Movies\$Movie, probs=c(0, 0.25, 0.5, 0.75, 1), na.rm=TRUE)} \\
+{\f sd(Movies\$Movie, na.rm=TRUE)} \\
+{\f var(Movies\$Movie, na.rm=TRUE)} \\[1.2ex]
+the mean for variables \textit{Movie} and \textit{Man}:\\
+{\f lapply(Movies[,1:2],mean, na.rm=TRUE)}\\[1.2ex]
+common descriptive statistics for variable \textit{fMovie}:\\
+{\f summary(Movies\$fMovie)}\\[1.2ex]
+common descriptive statistics for all variables; notice the function {\ff summary} gives different results for numeric and factor variables:\\
+{\f summary(Movies)}\\[1.2ex]
+common descriptive statistics for the variable \textit{Movie} categorized by variable \textit{fMan}:\\
+{\f tapply(Movies\$Movie,Movies\$fMan,summary,na.rm=T)}\\[1.5ex]
+%
+\framebox{\parbox{16cm}{A package "lattice" allows handy way to produce graphs like histograms, boxplots, scatterplots, etc. \textbf{Firstly}, this package should be installed;
+\textbf{secondly} it should be loaded every session user intends to use commands associated with this package.\\
+ad1) {\f install.packages("lattice")} ad2) {\f library(lattice)}.}}\\[1.5ex]
+%%%%%%%%%%%%%%%%%%%%%%%%
+!{\f library(lattice)}\\
+\tb\underline{Histograms}\\
+create a histogram for  variable \textit{Movie}:\\
+{\f histogram(Movies\$Movie,type="count",breaks=seq(0.5,5.5,1),col=24)}\\[1.2ex]
+create a histogram for  variable \textit{Movie} categorized by variable \textit{fMan}:\\
+{\f histogram($\sim$Movies\$Movie\ $|$\ Movies\$fMan, type="percent",breaks=seq(0.5,5.5,1))}\\[1.2ex]
+{\tiny(TODO rozmyslet oba grafy do jednoho obrazku jinak, nez pres "hist"; arg "`groups"' u histogram nefachci)}\\
+Assess the skewness - can the mean be used insted of the median?\\[0.1ex]
+%%%%%%%%%%%%%%%%%%%%
+\tb\underline{Box plots}\\
+create a boxplot for  variable \textit{Movie}:\\
+{\f bwplot(Movies\$Movie)}\\[1.5ex]
+create a boxplot for  variable \textit{Movie} categorized by variable \textit{fMan}:\\
+{\f bwplot($\sim$Movies\$Movie|Movies\$fMan)}\\
+create a boxplot for  variable \textit{Movie} categorized by variable \textit{fMan}, both graphs in one picture:\\
+{\f boxplot(Movies\$Movie$\sim$Movies\$fMan)}\\
+%%%%%%%%%%%%% 
+\nav
+...analogously, e.g.:\\
+{\f summary(Household.marriage)}\\
+{\f lapply(Household.marriage,function(my)\{m=mean(my);s=sd(my);v=var(my);return(c(m,s,v))\})}\\[1.5ex]
+{\f histogram(Household.marriage\$getmar ,type = "percent")}\\
+{\f histogram(Household.marriage\$ownhh ,type = "percent")}\\[1.5ex]
+ Notice that the shape of histogram  of variable \textit{ownhh} is skewed positively whereas \textit{getmar} is "symetric". Thus using of the mean in case of the
+ \textit{ownhh} is unacceptable whereas in case of the \textit{getmar} it can be accepted.\\
+ {\tiny(TODO rozmyslet oba grafy do jednoho obrazku, par(mfrow(c(1,2)) nefachci}\\
+%%%%%%%%%%%%%%
+ \nav
+ \tb\underline{$t$-test}\\
+ There are 1322 cases in a sample, so according to the large sample size, $t$-test is acceptable.\\
+Have a look at categorized histograms, descriptive statistics,... \\
+{\f histogram($\sim$Movies\$Movie| Movies\$fMan)}\\
+{\f bwplot($\sim$Movies\$Movie| Movies\$fMan)}\\
+{\f tapply(Movies\$Movie,Movies\$fMan,function(my)\{m=mean(my);v=var(my);return(c(m,v))\})}\\[1.5ex]
+Before running t-test it is necessary to assess the assumption of equal sigmas which is done via F-test:\\
+{\f var.test(Movies\$Movie[Movies\$fMan=="man"],Movies\$Movie[Movies\$fMan=="woman"],ratio=1,\\
+alternative="two.sided")}\\[1.5ex]
+As the F-test did not rejected equality of sigmas (p-value = 0.4058) we can proceed with two-sample t-test:\\
+{\f t.test(Movies\$Movie[Movies\$fMan=="man"],Movies\$Movie[Movies\$fMan=="woman"],\\mu=0,var.equal=T)}\\[1.5ex]
+(Notice, p-value of the t-test (p-value = 0.0001746) can be supplemented by  \textit{Cohen's d} for effect size. Code for calculating \textit{Cohen's d} is at the end of this file.)\\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \tb\underline{Wilcoxon rank sum test}\\
+A) Exact test\\
+!{\f library(exactRankTests)}\\
+{\f wilcox.exact(Movies\$Movie[Movies\$fMan=="man"],Movies\$Movie[Movies\$fMan=="woman"],mu=0,exact=TRUE)}\\
+This exact test is feasiable only for small sample sizes, so considered sample "Movies" can not be processed by this test.\\ [1.5ex]
+%
+B) Asymptotical test without continuity correction\\
+{\f wilcox.test(Movies\$Movie[Movies\$fMan=="man"],Movies\$Movie[Movies\$fMan=="woman"],mu=0,\\exact=FALSE, correct=FALSE)}\\[1.5ex]
+%
+C) Asymptotical test with continuity correction.\\
+{\f wilcox.test(Movies\$Movie[Movies\$fMan=="man"],Movies\$Movie[Movies\$fMan=="woman"],mu=0,\\exact=FALSE, correct=TRUE)}\\
+%%%%%%%%%%%%%%%%%%%%%
+\tb\underline{$\chi^2$ test}\\
+Firstly we have to create  contingency tables of categorial variables fMovie and FMan:\\
+{\f t<-table(Movies\$fMovie,Movies\$fMan); t} table of absolute frequences\\
+{\f addmargins(t)} absolute frequences with margins\\
+{\f prop.table(t) } relative frequences (cell percentages)\\
+{\f addmargins(prop.table(t))} relative frequences with margins\\
+{\f  prop.table(t,1)} row percentages\\
+{\f  prop.table(t,2)} column percentages\\
+{\f  margin.table(t,1)} row margins \\
+{\f  margin.table(t,2)}  column margins\\[1.5ex]
+Performing $\chi^2$-test:\\
+{\f chisq.test(t)} provides p-value and the test-statistic\\
+{\f chisq.test(t)\$expected}\\
+{\f chisq.test(t)\$observed}\\
+{\f chisq.test(t)\$residuals}\\
+%%%%%%%%%%%%%%%%%%%%%
+\nav
+\tb\underline{ANOVA}\\
+ As there are 1322 values in a data set ANOVA is acceptable.
+ \begin{itemize}
+   %
+	\item[a)] \textbf{Categorised boxplots in one picture: }\\
+	{\f boxplot(Household.education\$ownhh$\sim$Household.education\$fdegree4)}\\
+	%
+	\item[b)] \textbf{Descriptive statistics: }\\
+	{\f tapply(Household.education\$ownhh,Household.education\$fdegree4,mean)}\\
+	{\f tapply(Household.education\$ownhh,Household.education\$fdegree4,sd)}\\
+	{\f tapply(Household.education\$ownhh,Household.education\$fdegree4,summary)}\\
+	 \item[c)] \textbf{Categorized histograms in separate pictures: }\\
+	{\f histogram($\sim$Household.education\$ownhh|Household.education\$fdegree4)}\\ 	
+	(Categorized QQ-plots can be supplemented. A code for it is at the end of this ?le.)
+	%
+	\item[d)] \textbf{Assumption of equality of variances:} \\
+	!{\f library(DescTools)}\\
+	{\f LeveneTest(Household.education\$ownhh$\sim$Household.education\$fdegree4,center=mean)}\\[0.5ex]
+	(For our data equality of variances was rejected and ANOVA should not be performed. Following steps are just to demonstrate the \rr functions related to ANOVA method. 
+	However, \rr offers also function for performing ANOVA with unequal variances, 	this test is 	only asymptotical and not included in basic textbooks.\\
+	{\f oneway.test(Household.education\$ownhh$\sim$Household.education\$fdegree4,var.equal = FALSE)})
+	%
+	\item[e)] \textbf{ANOVA test:}\\
+	{\f model<-lm(Household.education\$ownhh$\sim$Household.education\$fdegree4)}\\
+  Attention! The factor variable in a model definition must be of class "factor". Otherwise, e.g class "numeric" for variable "degree" will lead to false results.\\
+	{\f anova(model)}\\
+	or
+	{\f aov(Household.education\$ownhh$\sim$Household.education\$fdegree4)}\\
+	{\f summary(aov(Household.education\$ownhh$\sim$Household.education\$fdegree4))}\\
+  %
+	\item[f)] \textbf{Post-hoc tests:} \\
+	Firstly package "agricolae" has to be installed and downloaded.\\	
+	!{\f library(agricolae)}\\
+	{\f scheffe.test(aov(ownhh$\sim$fdegree4,data=Household.education),"fdegree4", group=TRUE,\\ console=TRUE,alpha=0.104)}\\
+	(This function does not provide p-values, only shows whether or not means are significantly different at the $\alpha$ level. When  $\alpha=0.05$, no pair is for our data significantly different; here contrast can be significant.)\\[1ex]
+	TukeyHSD test is appropriate for balanced design (which is not our case), thus following \rr function is just to demonstrate a syntax.\\
+	{\f TukeyHSD(aov(Household.education\$ownhh$\sim$Household.education\$fdegree4))}\\
+	(Performed p-values are smaller then true p-values, as the test assumes balanced groups.)\\[1ex]
+	Another option in base package is Bonferroni Multipl comparisons method:\\
+	{\f pairwise.t.test(Household.education\$ownhh,Household.education\$fdegree4,\\ p.adjust.method="bonferroni") }\\
+	  %
+	\item[f)] \textbf{Analyzing residuals:} \\
+	{\f shapiro.test(residuals(lm(Household.education\$ownhh$\sim$Household.education\$fdegree4)))}
+	(As the sample size is large it is no surprise that the normality was rejected.\\[1ex]
+	{\f qqnorm(residuals(lm(Household.education\$ownhh$\sim$Household.education\$fdegree4)))}\\
+	{\f qqline(residuals(lm(Household.education\$ownhh$\sim$Household.education\$fdegree4)))}\\
+\end{itemize}
+  %
+ \tb\underline{Kruskal-Walis test}\\
+  {\f histogram($\sim$Household.education\$ownhh|Household.education\$fdegree4, type="percent")}\\
+  {\f kruskal.test(Household.education\$ownhh$\sim$Household.education\$fdegree4)} \\[1ex]
+	%
+   \tb\underline{$\chi^2$ test}\\
+	{\f t<-table(Household.education\$ownhh , Household.education\$fdegree4); t} \\
+	{\f chisq.test(t)}\\[2ex]
+\textbf{	script for Cohen's $d$:}
+	{\small\vspace{-2ex}
+	%%%%%%%%%%%%%%%%%%%% script for Cohen
+		\begin{verbatim}
+	.........................................................................
+		cohens_d <- function(x, y) {
+    lx <- length(x)- 1
+    ly <- length(y)- 1
+    md  <- abs(mean(x) - mean(y))        ## mean difference (numerator)
+    csd <- lx * var(x) + ly * var(y)
+    csd <- csd/(lx + ly)
+    csd <- sqrt(csd)                     ## common sd computation
+
+    cd  <- md/csd                        ## cohen's d
+}
+> res <- cohens_d(Movies$Movie[Movies$fMan=="man"],Movies$Movie[Movies$fMan=="woman"])
+> res
+.........................................................................
+	\end{verbatim}}\vspace{0ex}\noindent
+	%%%%%%%%%%%
+	\textbf{script for normal Q-Q plot:}
+	{\small\vspace{-2ex}
+	\begin{verbatim}
+	.........................................................................
+	cat.qq<-function(x,y){
+  l<-length(levels(y))
+  par(mfrow=c(l/2,2))
+  for(i in levels(y) ){qqnorm(x[y==i],main=(paste(i," Normal Q-Q Plot")) )  
+                       qqline(x[y==i])}
+  }
+	.........................................................................
+	\end{verbatim}}\vspace{-1ex}
+	useful:\\
+!{\f library(DescTools)}\\
+{\f Freq(Household.marriage\$ownhh )	}\\
+{\f PercTable(Household.marriage\$ownhh , Household.marriage\$getmar)}\\
+\end{document}

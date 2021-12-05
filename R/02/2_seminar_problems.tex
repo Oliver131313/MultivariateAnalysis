@@ -1,0 +1,49 @@
+  \documentclass[12pt]{article}
+ %\usepackage{czech}
+ \usepackage[cp1250]{inputenc}
+ \usepackage[czech]{babel}
+ \usepackage{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+\usepackage{pdfpages}
+
+
+ \voffset-2.5cm
+\setlength{\textheight}{25cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]
+           }
+\newcommand{\res}{\par\medskip\noindent{\bf Øešení}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\ee}{\enquote}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\begin{center}
+\textbf{Seminar no. 2}
+\end{center}\vspace{0.3cm}
+In the dataset \textit{Household\_marriage.RData}, there are 1346 respondent answers on two questions:\\
+question 1: \uv{How important is that the youth do not live in the same household as their parents?}\\
+Question 2: \uv{How important is to get married?}\\
+The answers were on 5 value scale: 
+Very important(1) - Quite important(2) -  To some extent important(3) -  Not so important(4) -  Absolutely not important(5).\\
+Using suitable descriptional statistics characterize both variables and compare the distribution of the two questions.\\
+(General Social Survey, USA, 2002)
+\prikl
+For the \textit{Household\_marriage.RData} dataset depict the plot of the  \textit{ownhh} and \textit{getmar} variables. Since the repeated values of the pairs are located the same, slightly misrepresent their location.
+\prikl
+In the \textit{Household\_marriage.RData} dataset state and compare the associations between the variables  "opinion on own household importance" and "opinion on marriage importance".
+
+By the Spearman correlation coeficient test the indepence of the two variables. Regarding the value of $r_S$, evaluate the significance and practical application relevance of the test. Compare the $p$ value of this test with the $p$ value of the $\chi^2$ test of independence. What is the change in the $p$ values related to the data ordinality? 
+\prikl
+Do the opinions about own household and marriage importance differ? Discover in the \textit{Household\_marriage.RData}.
+\prikl
+In the dataset \textit{Criminality.RData}, there are particular states of USA with values of 7 variables: ratio of violates on 100k inhabitants, ratio of murders,..., percentage of households under the poverty line, percentage of incomplete families. 
+Characterize graphically the multidimensional data a) using pairs of variables, b) using charts suitable for multidimensional visualization.\\
+\textbf{Homework:} The same tasks as in the problem 4 for the \textit{Countries.RData} dataset.
+
+
+\end{document}

@@ -1,0 +1,100 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 4th seminar}
+\end{center}\vspace{0.3cm}
+Data set\textit{Satisfaxtion.RData} provides data from questionnaire which aimed at detecting the level of satisfaction in particular areas of life. Sample consisted of 100 randomly choosen adults who answered 10 questions (variables). Higher value of particular variable, higher level of satisfaction. \par
+Analyze the associations among variables. Do exists factors which effects the level of satisfaction in particular areas of life? Is it possible to interpret the factors in a reasonable way?  
+%%%%%%%%%%%%%%%%%%%%
+\nav
+\tb Get familiar with data (correlation matrix,scatterplot matrix,...)\\[1ex]
+!{\f library(DescTools )}\\
+!{\f library(ellipse)}\\
+!{\f library(car)}\\[1ex]
+{\f x<-cor(Satisfaction,use="pairwise.complete.obs")}\\
+{\f pairs(Satisfaction,panel=panel.smooth)}\\
+{\f scatterplotMatrix(Satisfaction,smooth=F,diagonal="histogram",col=c(2,1,4))}\\
+{\f PlotCorr(x)}\\
+{\f plotcorr(x)}\\
+%
+\nav
+\tb Is FA appropriate method for our data? (=Is correlation matrix significantly different from unit matrix?)\\[1ex]
+Visually asses graphs provided by correlation plots from previous task. (There exists test, no idea where in \rr)
+%
+\nav
+Set the number of factors $k$. \\
+Firstly the factors will be considered equal with principal components. So find the eigenvalues of correlation matrix of considered data and according to criteria from the third seminar determine the appropriate number of first $k$ principal components.\\[1ex]
+{\f p<-prcomp(x=Satisfaction, center=T,scale.=T)}\\
+{\f a<-p\$ sdev$\ \^{}\ 2$}\\
+{\f sum(a[1:2])/10} the result=0.7919 expresses percentage of total variance when using first two components\\
+or {\f summary(p)} - in an output in a "cumulative proportion" line.
+%
+\nav
+\tb Create the object in \rr bearing all essential results of FA for $k=2$ and $k=3$. \\
+Set the extraction method to be "maximum likelihood" and rotation method "varimax" {\tiny je normalizovany}.  \\
+(We are looking for those rotation methods which lead to loadings approching eighter 0 or +/-1.)\\[1ex]
+Rather then using {\f factanal} from the package {\ff stats} use function {\f fa} from the package {\ff psych}. Both functions performs factor analysis on standardized data (e.g. on correlation matrix). The {\f factanal} function offers only 
+log likelihood (assuming multivariate normality over the uniquenesses) extraction method, whereas {\f fa} offers also further extraction methods (=factoring methods) including principal component method.\\[1ex]
+!{\f library(psych)}\\
+{\f f1<-fa(r=x,nfactors=2,rotate="varimax",fm="ml",scores="regression",residuals=T) }\\
+{\f f2<-fa(r=x,nfactors=3,rotate="varimax",fm="ml",scores="regression",residuals=T) }\\
+{\f f1}\\
+({\ff f1\$e.values} gives the same result as {\ff a<-p\$sdev$^$2}).
+%
+\nav
+\tb Express original standardized variables by means of factor variables; interpret the loadings. Do it for $k=2$.\\
+(e.g.: $\mbox{standardized } AtWork1=0.75 f_1 + 0.05f_2+\varepsilon_1$; 0.75 is a correlation of...?)
+%
+\nav
+\tb  Represent graphically  all 10 original variables in a new system of  two/three factors. Try to interpret factors (if it gives sense - it is not always reasonable). \\[1ex]
+{\f plot(f1) }\\
+{\f plot(f2)}\\
+%
+\nav
+\tb Interpret communalities. Do it for $k=2$.\\
+(See the column "h2". E.g. 0.57 in the first line means that 57\% out of the total variance of the variable "AtWork1" can by explained by two factors. 0.43 is the unique part of its variance - see colmn "u2".)
+%
+\nav
+\tb Asses and interpret the values in residual matrix.\\[1ex]
+{\f f1\$residual}\\
+%
+\nav
+\tb Find the factor score coefficients.\\[1ex]
+{\f f1\$weights} (e.g. $F_1=0.12599\ AtWork1+\ldots+0.113355 \ General2$)\\
+%
+\nav
+\tb {\tiny nefakchci prepocitani v nove soustave}.\\[1ex]
+
+
+{\f }\\
+{\f }\\
+{\f }\\
+
+
+
+\end{document}

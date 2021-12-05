@@ -1,0 +1,94 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+%\hoffset-2cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 11th seminar}
+\end{center}\vspace{0.3cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+Data set \textit{Emamma.RData} presents data of 1000 female patients with  breast cancer diagnosis treated in  Masaryk Oncology Institute in Brno. The list of selected variables follows:\\[1ex]
+AGE … age when diagnosis was determined;\\
+TIME … survival time in months;\\
+Death … the status indicator, (0=alive, 1=dead);\\
+SIDE … ( left and right);\\
+CHT … chemotherapy (yes/no);\\
+CHT\_Ttype… type of chemotherapy (no chemotherapy,  CMF,  FAC, other);\\
+HT … hormonal therapy ( yes/no);\\
+LR … local relapse (yes/no);\\
+MTS … metastases (yes/no);\\
+MP … menopause (0 - premenopausal, 1 - postmenopausal);\\
+HISTOL … histology (1- ductal, 2 - lobular, 3 - modular, 4 - other);\\
+STAGE … stage of tumor disease (  1, 2, 3, 4, higher values mean later stage)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\nav
+For the whole data set: \\
+\tb build the Kaplan-Meier estimate of survival function.\\
+%
+!{\f library(survival)}\\
+{\f S<-Surv(Emamma\$TIME,event=Emamma\$Death)}\\
+{\f SResults<-survfit(S$\sim$1,conf.type="plain", type="kaplan-meier")}\\
+{\f plot(SResults,conf.int=F,xlab="survival time", ylab="survival probability")}\\[1ex]
+\tb
+Find out median, lower and upper quartile for the survival time.\\
+{\f SResults}\\[1ex]
+\tb Create confidence intervals for survival function. \\(It is based on formula: $lower=\hat{S}(t)-\sqrt{\hat{Var}(\hat{S}(t))}\cdot u_{1-\alpha/2}$;
+	$\ upper=\hat{S}(t)+\sqrt{\hat{Var}(\hat{S}(t))}\cdot u_{1-\alpha/2}$)\\
+{\f plot(SResults,conf.int=T,xlab="survival time", ylab="survival probability")}\\
+
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+
+\end{document}

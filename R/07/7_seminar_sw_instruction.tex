@@ -1,0 +1,126 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+%\hoffset-2cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 7th seminar}
+\end{center}\vspace{0.3cm}
+%
+In a data set  \textit{Holiday.RData} there are information  about 50 families and their attitude to holiday destinations:\\
+\hspace*{-2cm}\begin{tabular}{|l|l|}
+\hline
+ \textit{ID}& yes/no indicator showing whether a family visited  particular holiday destination during last 2 years\\
+ $X_1$ & states an annual family income in thousands of dollars\\
+ $X_2$ & states an attitude to travelling (on a scale 1 to 9, where 1 = absolutely negative, 9 = absolutely pozitive)\\
+ $X_3$ & states an importance attributed to a family holiday (on a scale 1 to 9, where 1 =  the lowest, 9 = the highest)\\
+ $X_4$ & states the number of family members\\
+ $X_5$ & states an age of the oldest member of a family\\
+ $V$ & states planed holiday expenditures of a family: little (1), medium (2), much (3)\\
+\hline
+\end{tabular}\\[1ex]
+%
+All following tasks do first when:\\
+\textbf{a)} The \textit{ID} is a grouping variable (this must be of class factor). Explanatory variables are $X_1,\ldots,X_5$. (Data are considered to be trainig data set.)\\
+At home when:\\
+\textbf{b)} The \textit{V} is a grouping variable.  Explanatory variables are $X_1,\ldots,X_5$ the same.\\[1ex]
+%
+\nav
+Get familiar with data \\
+\tb Plot 2D graphs with pairs of explanatory variables and distinguish the points with regard to grouping variable. \\
+{\f  plot(Holiday[,2:6],col=Holiday[,1])}\\[1ex]
+\tb Calculate means of all explanatory variables separated by grouping variable; what do the results suggest?\\
+{\f for(i in 2:6){cat("X",i-1,": ",tapply(Holiday[,i],Holiday[,1],mean), ' \textbackslash n')}}\\[1ex]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\textsc{Canonical discriminant analysis:}\\%[1ex]
+%
+\nav
+\tb How many canonical discriminant variables are in the model?\\
+(Answer: for grouping variable = ID it is  $l=\min\{p=5,k-1=1\}=1$. Thus we are looking for just one discriminant variable.)
+%
+\nav
+\tb Create the object in \rr bearing all essential results of Canonical discriminant analysis.
+!{\f  library(candisc)}\\
+{\f LinModel<-lm(cbind(X1,X2,X3,X4,X5)~ID,data=Holiday)}\\
+{\f CanResults1<-candisc(LinModel,term="ID")}\\
+or for groupin variable = V:\\
+{\f LinModel2<-lm(cbind(X1,X2,X3,X4,X5)~V,data=Holiday)}\\
+{\f CanResults2<-candisc(LinModel2,term="V")}\\
+%
+\nav
+\tb Find out raw and standardized discriminant coefficients. (Standardized allows better interpretation.) Which variable bears the largest peace of information for discrimination?\\[1ex]
+{\f CanResults1\$coeffs.raw}\\
+{\f CanResults1\$coeffs.std}\\
+(for standardized: $Y=-0.848X_1+\ldots+-0.469X_5$ Thus the direction of discriminant variable $Y$ is mostly influenced by $X_1$ which is an income...)
+%
+\nav
+\tb Find out correlations between original variables and canonical variable(s). Compare its signs with signs of discriminant coefficients. Interprete it. \\[1ex]
+{\f CanResults1\$structure}\\
+(e.g.: $R(X_1,Y)=-0.929$). 
+%
+\nav
+\tb Find out canonical scores. In other words express all cases by the mean of the new canonical variable(s).\\[1ex]
+{\f CanResults1\$scores}\\
+%
+\nav 
+\tb Find out means of the new canonical variable(s) for both groups.\\[1ex]
+{\f CanResults1\$means}\\
+("No" group mean of $Y$: 1.059855;  "Yes" group mean of $Y$: -1.463609)\\
+%
+\nav
+\tb Express graphicaly the results of canonical discriminant analysis.\\
+{\f plot(CanResults1,  fill=TRUE)}\\
+{\f NewData<-data.frame(CanResults1\$scores,rep(0,times=50))}\\
+{\f head(NewData)}\\
+{\f plot(NewData[,2:3],col=NewData[,1])}\\[2ex]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for voluntiers TODO:
+\textsc{Linear discriminant analysis LDA:}\\
+!{\f library(MASS)}\\
+%
+\nav
+\tb Check assumptions (multivariate normality in all groups (we wish not to reject), equality of Variance matrices (we wish not to reject), equality of mean vectors (we wish to reject)
+\tb Create objects for LDA:\\
+{\f LdaResults1<-lda(ID $\sim$ X1+X2+X3+X4+X5,data=Holiday,prior=c(0.5,0.5),CV=F)}\\
+{\f LdaResults1}\\
+To get the classification matrix:\\
+{\f LdaPredict1<-predict(LdaResults1,newdata=Holiday[,2:6])\$class}\\
+{\f  LdaPredict1}\\
+{\f table(LdaPredict1,Holiday[,1])}\\[1ex]
+%
+{\f LdaResults1.1<-lda(ID $\sim$ X1+X2+X3+X4+X5,data=Holiday,prior=c(0.5,0.5),CV=T)}\\
+{\f LdaResults1.1}\\
+{\tiny Nefachci pro jine prior, koreny i tabulka uspesnosti stejne, jako pro 0,5}\\
+{\f LdaResults2<-lda(ID $\sim$ X1+X2+X3+X4+X5,data=Holiday,prior=c(0.58,0.42),CV=F)}\\
+{\f LdaResults2}\\
+{\f LdaResults2.1<-lda(ID $\sim$ X1+X2+X3+X4+X5,data=Holiday,prior=c(0.58,0.42),CV=T)}\\
+{\f LdaResults2.1}\\
+
+
+
+
+
+\end{document}

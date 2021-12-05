@@ -1,0 +1,113 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 3rd seminar}
+\end{center}\vspace{0.3cm}
+In the dataset \textit{Countries.RData}, there are data of employment in particular sectors in 1979. Analyze associations in employment between particular sectors (variables) using PCA. 
+Assess how the particular countries (objects) are different in terms of economical structure. In the beginning, standardize the data. 
+Work with all variables (There are 8 variables. Vector of these variables shall be further signed as $\mathbf X$.)
+%
+\nav
+\tb Get familiar with data (correlation matrix,scatterplot matrix, Chernoff faces...)\\[1ex]
+!{\f library(DescTools )}\\
+!{\f library(ellipse)}\\
+!{\f library(car)}\\[1ex]
+{\f x<-cor(Countries[1:8],use="pairwise.complete.obs")}\\
+{\f pairs(Countries,panel=panel.smooth)}\\
+{\f scatterplotMatrix(Countries[1:8],smooth=F,diagonal="histogram",col=c(2,1,4))}\\
+{\f PlotCorr(x)}\\
+{\f plotcorr(x)}\\
+{\f PlotFaces(Countries)}
+%
+\nav
+\tb Is PCA appropriate method for our data? (=Is correlation matrix significantly different from unit matrix?)\\[1ex]
+Visually asses graphs provided by correlation plots from previous task. (There exists test, no idea where in \rr)
+%
+\nav
+\tb Create the object in \rr bearing all essential results of PCA\\[1ex]
+%!{\f library(psych)}\\
+%!{\f install.packages("GPArotation")}\\
+%{\f p1<-principal(Countries[1:8], nfactors=8)}\\
+%All calculations are based on correlation (not covariance) matrix, which means that PCA works at standardized data.
+{\f p<-prcomp(x=Countries, center=T,scale.=T)}\\
+ center and scale = T means all calculations are based on correlation (not covariance) matrix, which means that PCA works at standardized data.
+%
+\nav
+\tb Find the eigenvalues of a correlation matrix (of standardized variables)\\[1ex]
+%{\f p1\$values} or\\
+{\f p\$sdev} representr square root of eigenvalues\\
+{\f p\$sdev$\ \^{}\ 2$} eigenvalues}\\
+or\\
+{\f eigen(x)\$values}\\
+%
+\nav
+\tb Determine the number of components to extract(Use criterion: scree plot; percentage of explained variability is $>$75\%; number of eigenvalues $>$1).
+What portion of total variance of $\mathbf X$ is explained by first two (resp. three) principal components? - this represents importance of particular components.\\[1ex]
+Scree plot:\\
+%{\f fa.parallel(Countries[1:8],fa="pc")} (blue "cross" marks show the eigenvalues)\\
+{\f  plot(p,type="l") }\\
+{\f summary(p)} look at the line "Proportion of Variance"\\
+%
+\nav
+Find eigenvectors associated with the first 3 eigenvalues and consequently express first three principal components $Y_1,Y_2,Y_3$. ($D(Y_{1})=\lambda_1$; ...).
+Finaly express first three standardized principal components $Y_{1S},Y_{2S},Y_{3S}$. ($D(Y_{rS})=1$).\\
+{\f  p\$rotation} In the first column of the output there is the first eigenvector,...\\
+or\\
+{\f eigen(x)\$vectors} In the first column of the output there is the first eigenvector,...\\
+or\\
+{\f print(p)}\\
+{\f v<-matrix(rep(p\$sdev,8),8,8,byrow=T)}\\
+{\f p\$rotation/v}\\ ... standardized 
+
+%
+\nav
+\tb Calculate the correlation between original variables and principal components:\\
+{\f p\$rotation*v}\\
+As we are processing PCA on standardized data, $\sigma_j$ in the following formula is equal to unit: $R(X_j,Y_r)=\frac{\sqrt{\lambda_r}v_{rj}}{\sigma_j}$
+{\f }\\
+{\f }\\
+
+\nav
+\tb Express the cases in a new system of all (resp. first three) principal components:\\
+{\f NewCoordinate<-predict(p,newdata=Countries)}\\
+{\f NewCoordinate[,1:3]}\\
+%
+\nav
+\tb plot the graphs 1) where the cases are expressed in a system of first two principal components; 2) Represent all 8 original variables in a new system of first two components.\\[1ex]
+{\f biplot(p,xlim=c(-0.3,0.7))}\\[1ex]
+Black points representing countries are axpressed in a new system of first two components; notice which countries have similar economics. Which country is an "outlier"?\\
+Coordinates of red points(original variables) can be interpreted as correlations of original variable with particular principal components.
+%
+
+\nav
+záložka Promìnné: Communality (kosinus 2)
+{\f }\\
+{\f }\\
+{\f }\\
+
+\end{document}

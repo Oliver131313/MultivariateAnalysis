@@ -1,0 +1,139 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+\usepackage{amssymb}
+\usepackage{amsmath, amsthm}
+\usepackage{bm} 
+
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 12th seminar}
+\end{center}\vspace{0.3cm}
+%
+# Logistic Regression
+# where F is a binary factor and
+# x1-x3 are continuous predictors
+fit <- glm(F~x1+x2+x3,data=mydata,family=binomial())
+summary(fit) # display results
+confint(fit) # 95% CI for the coefficients
+exp(coef(fit)) # exponentiated coefficients
+exp(confint(fit)) # 95% CI for exponentiated coefficients
+predict(fit, type="response") # predicted values
+residuals(fit, type="deviance") # residuals \\
+{\f load("GermanCredit.RData")}\\
+{\f dim(GermanCredit)}\\
+{\f library(DescTools)}\\
+{\f WhichFactors(GermanCredit)}\\
+{\f WhichNumerics(GermanCredit)}\\
+\nav\vspace{-4ex}
+  \begin{enumerate}\itemsep -4pt 
+  \item
+  \item
+  \item
+	 \item 
+	For our data "not paying back the credit" is a success. (We are modeling "not paying back"). In \rr philosophy the first level in any factor variable is treated as "failure".
+	So firstly look into data set at first three variables and check the levels of {\ff ffClass} and {\ff fClass}. \\
+	{\f levels(GermanCredit\$fClass)} and {\f levels(GermanCredit\$fClass)}\\
+	({\ff ffClass} is for our problem appropriate.)\\[1ex]
+	%
+	Create the model itself:\\
+	\hspace*{-8ex}
+	\framebox{\parbox{17.5cm}{{\f model<-glm(ffClass$\sim$A00Amount100,data=GermanCredit,family=binomial(link="logit"))}}}\\[1ex]
+	%
+	To obtain parameter estimates $\hat{\beta_k}$:\\
+	{\f summary(model)}\\or simply: \\
+	{\f coef(model)}\\
+	$\hat{\beta_0}=-1,23$ ; $\hat{\beta_1}=0,0112$\\[2ex]
+	%
+	To obtain parameter estimates $e^{\hat{\beta_k}}$:\\
+  {\f exp(coef(model))}\\
+	%
+	\item
+	 To obtain confidence intervals for $\beta_k$:\\
+	{\f confint(model,level = 0.95)}\\
+	$\beta_0\in(-1,44\ ;\ -1,02)$  $\beta_1\in(0,0066\ ;\ 0,0158)$\\
+	%
+	\item
+	To obtain confidence intervals for  $e^{\hat{\beta_k}}$:\\
+	{\f exp(confint(model,level = 0.95))}\\
+	%
+	\item 
+	 p-values for testing parameter's significance via Wald statistics:\\
+	{\f summary(model)}\\ p-values are in the collumn "$Pr(>|z|)$".
+	%
+	 \item
+	{\ff Null Deviance} = $D_0=-2\log L_0$, where $L_0$ is a maximum likelihood of a "null" model with nothing but an intercept. (In our case $logit(p(x_1))=\beta_0$)\\[1ex]
+	{\ff Residual Deviance} = $D_1=-2\log L_1$, where $L_1$ is a maximum likelihood of a "full" model with all predictors. (In our case $logit(p(x_1))=\beta_0+\beta_1 x_1$)\\[1ex]
+	Ratio $LR_{0,1}=D_0-D_1=-2\log\frac{L_0}{L_1}\approx \chi^2(df_0-df_1)$.\\
+	Better model has smaller deviance. Significantly better full model then null model leads finally to large values of $LR_{0,1}$ which is considered to be a liklihood-ratio test statistic.
+	Thus the concerned p-value is on the right tail of $\chi^2$ distribution.\\[1ex]
+	(For our problem the likelihood-ratio test is in fact a test about a significance of the parameter $\beta_1$. 
+	$LR_{0,1}=(1221.7-1199.1)=22.6$; $LR_{0,1}\approx\chi^2(999-998)$ thus the $p=0,000002)$ and the full model is significantly better then the null model. \\[1ex]
+	This p-value can be obtained also by:\\
+	{\f anova(model,test="Chi")}\\[1ex]
+	%
+  {\ff AIC}$=k-2\log L_1=k+D_1$, where $k=2*$ number of parameters. Better model has smaller $AIC$. Compared with deviance, models are penalized for large number of parameters. \\[1ex]
+	(For our problem the  $AIC=2*2+1199.1=1203.1$.)
+	%
+   \item Hosmer-Lemeshow I dont't have\\
+	{\f residuals(model, type= "deviance")} (this deviance type is also in an output of summary)\\
+	(other types: "deviance", "pearson", "working","response", "partial")\\
+	{\f residuals(model, type= "response")}; (this response type means: observed minus probability of success)\\
+	%
+	\item Fitted values:\\
+	logarithmic odds ratio $\log\left( \frac{p(\bm{x})}{1-p(\bm{x})}\right)$:\\
+	{\f p1<-predict(model, type="link") }\\[1ex]
+	probability of success $p(\bm{x})$:\\
+	{\f p2<-predict(model, type="response") } \\
+  \end{enumerate}\vspace{-2ex}
+%%%%
+overeni predpokladu linearity prave strany:
+ {\small\vspace{-2ex}
+ \begin{verbatim}
+ .........................................................................
+gr<-rep(1:4,each=250)
+dat<-data.frame(GermanCredit[,1:5])
+dat<-dat[order(dat$A00Amount100),] #seradi tabulku vzestupne dle prom Amount100
+dat<-data.frame(dat[,1:5],gr)
+model1<-glm(ffClass~A00Amount100,data=dat[1:250,],family=binomial(link="logit"))
+> model2<-glm(ffClass~A00Amount100,data=dat[250:500,],family=binomial(link="logit"))
+> model3<-glm(ffClass~A00Amount100,data=dat[500:750,],family=binomial(link="logit"))
+> model4<-glm(ffClass~A00Amount100,data=dat[750:1000,],family=binomial(link="logit"))$
+> mean(pp1<-predict(model1, type="response"))
+[1] 0.308
+> mean(pp2<-predict(model2, type="response"))
+[1] 0.247012
+> mean(pp3<-predict(model3, type="response"))
+[1] 0.2270916
+> mean(pp4<-predict(model4, type="response"))
+[1] 0.4183267
+ .........................................................................
+ \end{verbatim}}\vspace{-1ex}\noindent
+Jelikoz prsti uspechu nejsou ve skupinach monotonni, nelze linearitu prave strany predpokladat
+
+ 
+
+\end{document}

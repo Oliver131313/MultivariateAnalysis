@@ -1,0 +1,126 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 5th seminar}
+\end{center}\vspace{0.3cm}
+In a data set  \textit{DistrictsCR.RData} there are some economic and demographic indicators of all districts in the Czech Republic. 
+By means of the CanCor analyze association between ekonomic (variables 1 - 7) and  demographic indicators (variables 8 - 15). \\[1ex]
+\begin{tabular}{|l|l|}
+\hline
+Earning99 & average monthly earning in 1999 in crowns\\
+Unempl& measure of registered unemployment in 2000\\
+Unempl2& number of unemployed per 1 job\\
+Unempl3& rate of long term unemployed per all unemployed\\
+BuyingPower& \\
+Progre& indicator of progressivity structure in economic\\
+Enterpr& number of enterprisers per 1000 inhabitants in 1999 \\
+Lifex& average life expectancy in 1991-1995\\
+Divorce & number of divorces per 100 marriages in 2000 \\
+Abortion & number  of abortion per 100 born children\\
+Pop& number of inhabitants living in small villages \\
+Crime& number of crimes per 1000 inhabitants in 2000\\
+Grow& relative growth of population\\
+Migr& average relative migration growth 1991-2000\\
+Pop65& rate of inhabitants older then 65 years in 1999\\
+\hline
+\end{tabular}\\[1ex]
+{\f load("DistrictsCR.RData")}
+%
+\nav
+\tb Get familiar with data (correlation matrix,scatterplot matrix,...)\\[1ex]
+a)\\
+b) As the first case CapitalPraha is an outlier, remove this case from the data set. The new data set entitle "Distr".\\
+{\f Distr<-DistrictsCR[-1,]}\\
+!{\f library(DescTools )}\\
+!{\f library(ellipse)}\\
+!{\f library(car)}\\[1ex]
+{\f x<-cor(Distr,use="pairwise.complete.obs")}\\
+{\f pairs(Distr,panel=panel.smooth)}\\
+{\f scatterplotMatrix(Distr,smooth=F,diagonal="histogram",col=c(2,1,4))}\\
+{\f PlotCorr(x)}\\
+{\f plotcorr(x)}\\
+%
+\nav
+\tb Is CCA appropriate method for our data? (= Is an upper corner of correlation matrix with correlations between left an 
+right set variables significantly different from the unit matrix?)\\[1ex]
+Visually asses graphs provided by correlation plots from previous task. 
+%
+\nav
+\tb The matrix {\ff Distr} separate into two matrices $U$ and $V$ where $U$ represents first 7 variables associated with economic indicators and $V$ 
+represents 8 variables associated with demografphic indicators.\\
+{\f U<-Distr[,1:7]}\\
+{\f V<-Distr[,8:15]}\\
+%
+%
+\nav
+\tb Create the object in \rr bearing all essential results of CCA. (Rather then function {\f cancor} from the package {\ff stats}
+use function {\f cc } from a package {\ff CCA }\\[1ex]
+!{\f install.packages("CCA")}\\
+{\f Cresults<-cc(U,V)}\\
+%
+\nav
+\tb a) Find the total redundancy for the left set of variables (resp. right set of variables.) 
+In other words: What proportion of the left set variance of original variables can be explained by "right"  canonical variables?\\
+\tb b) How the canonical variables represent their original variables? (How are Xs represented by Us? How are Ys represented by Vs?)\\[1ex]
+See \rr script {\ff redundancy.R} 
+%
+\nav
+\tb 
+Determine the "reasonable" number of pairs of canonical variables.\\[1ex]
+a) Find the values of canonical correlation coefficients\\
+{\f Crho<-Cresults\$cor} notice that values in {\ff Crho} are decreasing.\\[1ex]
+b) Test their significance by $\chi^2$ Bartlett test (with successive roots removed).\\
+This p - values are not available in a packag CCA, for that reason another package CCP has to be installed and loaded.\\
+!{\f install.packages("CCP")}\\
+{\f p.asym(rho=Crho, N=76, p=7, q=8, tstat = "Wilks")}\\
+(The first three canonical correlations are significant at the level 5\%.)\\[1ex]
+c) Asses the scree plot of eigenvalues (see chapter 5.3. in a lecture document).\\
+{\f Crho$\mbox{\^{}2}$}\\
+{\f plot(Crho$\mbox{\^{}2}$ ,type="b")}\\[1ex]
+d) Find redundancy for the first $k=3$ pairs of canonical variables.\\
+See \rr script {\ff redundancy.R} 
+%
+\nav
+\tb  Interpret factor structure, e.g. correlations between particular variables "from the left set" $X_i$ and canonical variable "from the left set" $U_j$. (Respectively  
+correlations between particular variables "from the right set" $Y_i$ and canonical variable "form the right set" $V_j$.) 
+Which variables from the left set are well represented by the first canonical variable $U_1$? \\[1ex]
+{\f Cresults\$scores\$corr.X.xscores}  \\ 
+e.g. $R(Earning,U_1)=0.842$ .The {\ff Earning} is well represented by $U_1$.\\
+{\f Cresults\$scores\$corr.Y.yscores}\\
+%
+\nav
+\tb 
+Express cases in a new system of U and V canonical variables.(=Calculate the canonical scores.)\\[1ex]
+{\f  Cresults\$scores\$xscores }\\
+{\f Cresults\$scores\$yscores}\\
+{\f }\\
+{\f }\\
+{\f }\\
+{\f }\\
+
+\end{document}

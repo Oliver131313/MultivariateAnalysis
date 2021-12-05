@@ -1,0 +1,113 @@
+ \documentclass[12pt]{article}
+ %\usepackage[czech]{babel}
+ %\usepackage[cp1250]{inputenc}
+ %\usepackage{graphicx}
+ \usepackage[pdftex]{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+ \usepackage{pdfpages}
+ \usepackage{hyperref}
+
+ \voffset-3cm
+\setlength{\textheight}{26cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Pøíklad \thedefi}\\*[0.1ex]}
+\newcommand{\nav}{\stepcounter{defi}\par\medskip\noindent{\bf \rr Instructions for the problem \thedefi:}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\tb}{\textbullet}
+%
+\newcommand{\rr}{\textcolor{blue}{\texttt{\textbf{R}}}\ }
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+\newcommand{\f}{\color{red}\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{\f }\\
+\begin{document}
+\begin{center}
+\textbf{ \rr instructions for the 2nd seminar}
+\end{center}\vspace{0.3cm}
+\nav
+According to discrete character of variables "ownhh" and "getmar", particular points in scatterplot are covering each other. Soft distortion of the points position may help:\\ 
+{\f foo<-rnorm(n=dim(Household.marriage)[1],sd=1)}\\
+{\f plot(Household.marriage\$ownhh+foo,Household.marriage\$getmar+foo)}\\[1ex]
+Smooth curve may give an inside in a relationship between considered variables: \\
+{\f scatter.smooth(Household.marriage\$ownhh+foo,Household.marriage\$getmar+foo)}\\ (creates graph plus smoothed curve)\\[1ex]
+or comfortably:\\
+!{\f library(help="DescTools")}\\
+{\f plot(Household.marriage\$ownhh,Household.marriage\$getmar)}\\
+{\f AddLoess(Household.marriage\$ownhh,Household.marriage\$getmar)}\\ (adds "loess" to existing plot)\\
+%
+\nav
+Significance test for Kendall's tau b:\\
+{\f cor.test(Household.marriage\$ownhh,Household.marriage\$getmar,method="kendall")}\\[1ex]
+Significance test for Spearman correlation coefficient:\\
+{\f cor.test(Household.marriage\$ownhh,Household.marriage\$getmar,method="spearman",exact=F)}\\
+Pearson$\chi^2$ test :\\
+{\f t<-table(Household.marriage\$ownhh , Household.marriage\$getmar); t}\\
+{\f chisq.test(t)}\\[1ex]
+The measures of association:\\
+!{\f library(help="DescTools")}\\
+{\f KendallTauB(Household.marriage\$ownhh,Household.marriage\$getmar)}\\
+{\f StuartTauC(Household.marriage\$ownhh,Household.marriage\$getmar)} (in a lecture $\tau_c$)\\
+{\f SomersDelta(Household.marriage\$ownhh,Household.marriage\$getmar,direction="row")} $d(X|Y)$  \\[1ex]
+{\f SomersDelta(Household.marriage\$ownhh,Household.marriage\$getmar,direction="column")} $d(Y|X)$ (pairs which doesn't have X ties; $Y\sim X$ \\
+{\f SpearmanRho(Household.marriage\$ownhh,Household.marriage\$getmar)}\\
+{\f GoodmanKruskalGamma(Household.marriage\$ownhh,Household.marriage\$getmar)}\\
+{\f CramerV(Household.marriage\$ownhh,Household.marriage\$getmar)}\\
+%
+\nav
+\tb\underline{histograms and boxplots (both variables in one picture)}\\
+{\f boxplot(Household.marriage\$ownhh, Household.marriage\$getmar)}\\
+{\f  hist(Household.marriage\$getmar,col=rgb(1,0,0,0.15),freq=F,breaks=seq(-0.5,5.5,by=1))}\\
+{\f hist(Household.marriage\$ownhh,col=rgb(0,0,1,0.15),freq=F,breaks=seq(-0.5,5.5,by=1),add=T)}\\[1ex]
+or:
+{\f plot(as.factor(Household.marriage\$ownhh), col=rgb(0,0,1,0.15))}\\
+{\f plot(as.factor(Household.marriage\$getmar), col=rgb(1,0,0,0.15),add=T)}\\
+%
+\tb\underline{descriptive statistics for "difference" variable}\\
+Firstly, new variable \textit{dif=ownhh-getmar} is set.\\
+{\f Household.marriage\$dif<-(Household.marriage\$ownhh-Household.marriage\$getmar)}\\[1ex]\newpage\noindent
+Descriptive statistics and confidence intervals for the new variable \textit{dif}:\\
+{\f table(Household.marriage\$dif)}\\
+!{\f library(help="DescTools")}\\
+{\f MeanCI(Household.marriage\$dif)}\\
+{\f MedianCI(Household.marriage\$dif)}\\
+{\f VarCI(Household.marriage\$dif)}\\[1ex]
+Graphs for the new variable \textit{dif}:\\
+{\f plot(as.factor(Household.marriage\$dif), col=rgb(1,0,0,0.15))} (notice that histogram is symetric which is an assumption of Wilkox signed rank test)\\[1ex]
+{\f  boxplot(Household.marriage\$dif,col=rgb(1,0,0,0.15))}\\
+%
+\tb\underline{paired $t$-test}\\
+{\f t.test(Household.marriage\$ownhh, Household.marriage\$getmar,paired=T)}\\[1ex]
+\tb\underline{paired Wilcoxon sign rank test}\\
+!{\f library(exactRankTests)}\\
+{\f wilcox.exact(Household.marriage\$ownhh, Household.marriage\$getmar,paired=T)}\\
+%
+\nav
+A description of variables in a spreadsheet \textit{Criminality} can be obtained by {\f comment(Criminality)}\\[1ex]
+\textbf{Pairs of variables:}\\
+%
+\tb\underline{correlation matrices} \\
+{\f x<-cor(Criminality[2:8],use="pairwise.complete.obs")}\\
+%
+\tb\underline{covariance matrices} \\
+{\f cov(Criminality[2:8],use="pairwise.complete.obs")}\\
+%
+\tb\underline{scatterplot matrix}\\[1ex]
+Scatterplot matrix with lowess line:\\
+{\f pairs(Criminality[2:8],panel=panel.smooth)}\\[1ex]
+Scatterplot matrix with regression line and histograms:\\
+!{\f library(car)}\\
+{\f scatterplotMatrix(Criminality[2:8],diagonal="histogram",smooth=FALSE,col=c(2,1,4))}\\[1ex]
+ Visualizing the strength of correlations in correlation matrix:\\
+!{\f library(help="DescTools")}\\
+{\f PlotCorr(x)}\\[1ex]
+!{\f library(ellipse)}\\
+{\f plotcorr(x)}\\
+%
+\textbf{Multidimensional vizualization:}\\
+!{\f library(help="DescTools")}\\
+{\f PlotFaces(Criminality[2:8])} plots Chernoff faces\\
+\end{document}

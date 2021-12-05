@@ -1,0 +1,86 @@
+  \documentclass[12pt]{article}
+ %\usepackage{czech}
+ \usepackage[cp1250]{inputenc}
+ \usepackage[czech]{babel}
+ \usepackage{graphicx}
+ \usepackage{a4wide}
+ \usepackage[style=german]{csquotes}
+\usepackage{pdfpages}
+ \usepackage{amssymb}
+\usepackage{amsmath, amsthm}
+\usepackage{bm} 
+
+ \hoffset-1.1cm
+ \voffset-2cm
+ \setlength{\textwidth}{18.5cm}
+\setlength{\textheight}{25cm}
+\pagestyle{empty} %zajisti, ze stranky nebudou cislovane a s hlavickou, krome prvni stranky
+\newcounter{defi}
+\setcounter{defi}{0}
+\renewcommand{\thedefi}{\arabic{defi}}
+\newcommand{\prikl}{\stepcounter{defi}\par\medskip\noindent{\bf Problem \thedefi}\\*[0.1ex]
+           }
+\newcommand{\res}{\par\medskip\noindent{\bf Øešení}\\*[0.1ex]}
+\newcommand{\nv}{X_1,\ldots,X_n}
+\newcommand{\ee}{\enquote}
+\newcommand{\X}{$X_1,\ldots,X_p\ $}
+\newcommand{\x}{$x_1,\ldots,x_p\ $}
+\newcommand{\xx}{\mathbf{x}}
+\newcommand{\XX}{\mathbf{X}}
+\newcommand{\tb}{\textbullet}
+\newcommand{\ff}{\fontfamily{cmtt}\selectfont}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\begin{center}
+\textbf{12 Seminar}
+\end{center}\vspace{0.0cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+The dataset \textit{GermanCredit.RData} has been provided by professor Hans Hofmann (Institut f\"ur Statistik und \"Okonometrie, Universit\"at Hamburg) into the {\ff http://archive.ics.uci.edu/ml/} repository in 1994 (November). The dataset consists of credit scoring data from the Federal Republic of Germany from the nineties. Details about all the variables can be found here:
+{\ff http://archive.ics.uci.edu/ml/datasets/Statlog+(German+Credit+Data)}. The list of chosen variables follows: \\[1ex]
+%
+{\ff Class}  … credit classification (0=good-paid credit, 1=bad-unpaid credit) We are modeling bad credit (that is considered as a "success");\\
+{\ff A00Amount100}  … credit amount in 100 DEM;\\
+{\ff A01Duration}  … credit duration in months;\\
+{\ff A02Age}  … age in years;\\
+{\ff A03IRP}  … installment rate in percentage of disposable income;\\
+{\ff A15Gender}  … gender (0=female, 1=male);\\
+{\ff A19Housing}  … housing (0=rent, 1=own, 2=for free);\\
+{\ff A20Job}  … job(0=unemployed/unskilled-non-resident, 1=unskilled - resident, 2=skilled employee/official, 3=management/self-employed/highly qualified employee/officer)\\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\prikl
+We are going to model the probability of unpaying the credit using one quantitative predictor \uv{credit amount} {\ff  A00Amount100}.
+%\vspace{-1ex}
+  \begin{enumerate}\itemsep -5pt 
+  \item Draw the box-plot of the {\ff  A00Amount100} variable categorized under {\ff Class}. What can we say about the impact of credit amount on the credit unpaying?
+  \item Draw a plot where there is the {\ff  A00Amount100} on the horizontal axis and the {\ff Class} on the vertical axis. Put a straight line or "Lowess" curve through the plots and interpret.
+	\item Construct a model.\newline Let sign $p(x_1)=P(Y=1|x_1)$; the probability that a client will not pay the credit of $x_1$100 DEM.
+	\newline Model:  $\qquad\log\left( \frac{p(x_1)}{1-p(x_1)}\right)=\beta_0+\beta_1x_1\qquad$ or 
+	  $\qquad\mathrm{odds}=\frac{p(x_1)}{1-p(x_1)}=e^{\beta_0+\beta_1x_1}$
+	\item Estimated the model paramters and interpret them. Does the interpretation of the $\beta_0$ or $e^{\beta_0}$ parameter make sense?\\
+	When interpreting $\beta_1$ discover how much higher/lower is the chance of unpaying when we compare groups of clients whose amounts of credit is different by one "hundred Deutche mark", by ten "hundred Deutche mark", or by a hundred "hundred Deutche mark".
+	\item State the confidence intervals (Wald) for $\beta_0$ and $\beta_1$ parameters.\\
+	$\beta_k\in(d,h)\ =\ (\hat{\beta_k}-u_{1-\alpha/2}se(\hat{\beta_k})\ ,\ \hat{\beta_k}+u_{1-\alpha/2}se(\hat{\beta_k}))$. Check if the standard error $se(\hat{\beta_k})$ is not strongly higher than $\hat{\beta_k}$. In that case the Wald stats and the subsequent tests are not reliable and the ratio of confidence test is more suitable.
+	\item State the confidence intervals for $e^{\beta_0}$ and $e^{\beta_1}$.\\
+		$e^{\beta_k}\in(e^{d},e^{h})$
+	\item Test the significance of both paramters using Wald test of dependence.\\
+	$H_0:\ \beta_k=0$ vs. $H_1:\ \beta_k\neq 0$
+	\item We are testing the significance of $\beta_1$ using ratio of credibility.\\
+	Null model: $logit(p(x_1))=\beta_0$ vs. Full model: $logit(p(x_1))=\beta_0+\beta_1 x_1$.
+  \item Test the model assumption by the Hosmer-Lemeshow test (the odds ratio derived from the logistic regression model must not be dependent on the credit amount, but only on the difference of the credit amount during comparing two groups.) \\
+  $H_0:\ $Goodness of fit (I do not want to reject), $H_1:$ Not goodness of fit.
+	\end{enumerate}\vspace{-2ex}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\prikl We are going to model the probability of unpaying the credit using one qualitative predictor.
+ {\ff A15Gender}.
+  \begin{enumerate}\itemsep -5pt 
+  	\item 
+	\end{enumerate}\vspace{-2ex}
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\prikl We are going to model the probability of unpaying the credit using vector of quantitative and qualitative predictors. 
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\prikl ordinal and multinomical regression
+  %\begin{enumerate}\itemsep -5pt 
+  	%\item 
+  %\end{enumerate}\vspace{-2ex}
+
+\end{document}
