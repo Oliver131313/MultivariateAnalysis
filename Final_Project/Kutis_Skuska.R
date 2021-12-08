@@ -132,9 +132,7 @@ cum_var_pca <-
 plot(cum_var_pca, type = "l") # scree plot
 
 
-biplot(fit)
-# Rozdielny biplot skrz ggplot
-
+# Biplot skrz ggplot
 ggbiplot(
     fit,
     scale = 1,
@@ -143,7 +141,8 @@ ggbiplot(
     var.axes = TRUE,
     alpha = 0
 )
-detach(package:plyr)
+
+# detach(package:plyr)
 
 # Nove hodnoty po linearnej transformacii pre k=4
 pca.scores <- predict(fit, newdata = fifa)
@@ -228,105 +227,174 @@ fifa.fa <-
     fifa.fa %>% dplyr::select(-Name) %>% mutate(Pos = factor(Pos, levels =
                                                                  c("CF/ST", "CM/CAM/CDM")))
 
-# seed
-set.seed(123)
-AUC_FA <- rep(0, 1000)
-for (i in 1:1000) {
-    # Train-Test split
-    train.index.fa <-
-        fifa.fa$Pos %>% createDataPartition(p = 0.75, list = FALSE)
-    train.data.fa <- fifa.fa[train.index.fa,]
-    test.data.fa <- fifa.fa[-train.index.fa,]
-    
-    # Fitni model
-    model.fa <- lda(Pos ~ ., data = train.data.fa,)
-    
-    # Predikcie
-    predictions.fa <- model.fa %>% predict(test.data.fa)
-    
-    ## Evaluation
-    # Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
-    predictions.posteriors.fa <-
-        as.data.frame(predictions.fa$posterior[, 2])
-    
-    pred.fa <-
-        prediction(predictions.posteriors.fa, test.data.fa$Pos)
-    roc.perform.fa <-
-        performance(pred.fa, measure = "tpr", x.measure = "fpr")
-    auc.train.fa <- performance(pred.fa, measure = "auc")
-    auc.train.fa.val <- auc.train.fa@y.values
-    
-    AUC_FA[i] <- as.double(auc.train.fa.val)
-}
-
-plot(roc.perform.fa)
-abline(a = 0, b = 1)
-text(x = .25, y = .65 , paste("AUC = ", round(mean(as.double(AUC_FA)), 3), sep = ""))
 
 
-# LDA na raw datach
+######## Tato cast moze ostat zakomentovana - Prilis dlho trva urobit 1000 LDAs na
+########  37 stlpcoch a 10,000 riadkoch. Pointa tejto casti kodu je porovnat ci je lepsie
+########  urobit LDA na FA pretransormovanych alebo povodnych stlpcoch. T-test udava, ze
+########  AUC pre LDA na povodnych stlpcoch je statisticky vyznamne rozne od LDA 
+########  vykonanej na FA transformovanych stlpcoch.
+# # seed
+# set.seed(123)
+# AUC_FA <- rep(0, 1000)
+# for (i in 1:1000) {
+#     # Train-Test split
+#     train.index.fa <-
+#         fifa.fa$Pos %>% createDataPartition(p = 0.75, list = FALSE)
+#     train.data.fa <- fifa.fa[train.index.fa,]
+#     test.data.fa <- fifa.fa[-train.index.fa,]
+#     
+#     # Fitni model
+#     model.fa <- lda(Pos ~ ., data = train.data.fa,)
+#     
+#     # Predikcie
+#     predictions.fa <- model.fa %>% predict(test.data.fa)
+#     
+#     ## Evaluation
+#     # Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
+#     predictions.posteriors.fa <-
+#         as.data.frame(predictions.fa$posterior[, 2])
+#     
+#     pred.fa <-
+#         prediction(predictions.posteriors.fa, test.data.fa$Pos)
+#     roc.perform.fa <-
+#         performance(pred.fa, measure = "tpr", x.measure = "fpr")
+#     auc.train.fa <- performance(pred.fa, measure = "auc")
+#     auc.train.fa.val <- auc.train.fa@y.values
+#     
+#     AUC_FA[i] <- as.double(auc.train.fa.val)
+# }
+# 
+# plot(roc.perform.fa)
+# abline(a = 0, b = 1)
+# text(x = .25, y = .65 , paste("AUC = ", round(mean(as.double(AUC_FA)), 3), sep = ""))
+# 
+# 
+# # LDA na raw datach
+# fifa.raw <-
+#     cbind(
+#         data %>% filter(BestPos %in% c("CM/CAM/CDM", "CF/ST")) %>% mutate(BestPos = factor(BestPos, levels = c(
+#             "CM/CAM/CDM", "CF/ST"
+#         )))
+#         %>% na.omit() %>% dplyr::select(BestPos),
+#         fifa
+#     )
+# 
+# head(fifa.raw)
+# 
+# AUC_RAW <- rep(0, 1000)
+# for (i in 1:1000) {
+#     # Preprocessing dat
+#     preproces.param.raw <-
+#         fifa.raw %>% preProcess(method = c("center", "scale"))
+#     fifa.raw.trans <- preproces.param.raw %>% predict(fifa.raw)
+#     
+#     # Train-test split
+#     train.index.raw <-
+#         fifa.raw$BestPos %>% createDataPartition(p = 0.75, list = FALSE)
+#     train.data.raw <- fifa.raw.trans[train.index.raw, ]
+#     test.data.raw <- fifa.raw.trans[-train.index.raw, ]
+#     
+#     # Fit the model
+#     model.raw <- lda(BestPos ~ ., data = fifa.raw.trans)
+#     
+#     # Predikcie
+#     predictions.raw <- model.raw %>% predict(test.data.raw)
+#     
+#     ## Evaluation
+#     # Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
+#     predictions.posteriors.raw <-
+#         as.data.frame(predictions.raw$posterior[, 1])
+#     
+#     pred.raw <-
+#         prediction(predictions.posteriors.raw, test.data.raw$BestPos)
+#     roc.perform.raw <-
+#         performance(pred.raw, measure = "tpr", x.measure = "fpr")
+#     auc.train.raw <- performance(pred.raw, measure = "auc")
+#     auc.train.raw.val <- auc.train.raw@y.values
+#     AUC_RAW[i] <- as.double(auc.train.raw.val)
+#     
+# }
+
+# # Porovnanie modelov
+# t.test(as.double(AUC_FA), AUC_RAW)
+# print("Vysledok testu ukazuje, ze LDA model postaveny na nepretranformovanych datach je lepsi!")
+
+
+# LDA na raw datach (Zakomentovat ak chcete vykonat t-test)
 fifa.raw <-
     cbind(
-        data %>% filter(BestPos %in% c("CM/CAM/CDM", "CF/ST")) %>% mutate(BestPos = factor(BestPos, levels = c(
+        data %>% 
+            filter(BestPos %in% c("CM/CAM/CDM", "CF/ST")) %>% 
+            mutate(BestPos = factor(BestPos, levels = c(
             "CM/CAM/CDM", "CF/ST"
         )))
         %>% na.omit() %>% dplyr::select(BestPos),
         fifa
     )
 
-head(fifa.raw)
+# Preprocessing dat
+preproces.param.raw <-
+    fifa.raw %>% preProcess(method = c("center", "scale"))
+fifa.raw.trans <- preproces.param.raw %>% predict(fifa.raw)
 
-AUC_RAW <- rep(0, 1000)
-for (i in 1:1000) {
-    # Preprocessing dat
-    preproces.param.raw <-
-        fifa.raw %>% preProcess(method = c("center", "scale"))
-    fifa.raw.trans <- preproces.param.raw %>% predict(fifa.raw)
-    
-    # Train-test split
-    train.index.raw <-
-        fifa.raw$BestPos %>% createDataPartition(p = 0.75, list = FALSE)
-    train.data.raw <- fifa.raw.trans[train.index.raw, ]
-    test.data.raw <- fifa.raw.trans[-train.index.raw, ]
-    
-    # Fit the model
-    model.raw <- lda(BestPos ~ ., data = fifa.raw.trans)
-    
-    # Predikcie
-    predictions.raw <- model.raw %>% predict(test.data.raw)
-    
-    ## Evaluation
-    # Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
-    predictions.posteriors.raw <-
-        as.data.frame(predictions.raw$posterior[, 1])
-    
-    pred.raw <-
-        prediction(predictions.posteriors.raw, test.data.raw$BestPos)
-    roc.perform.raw <-
-        performance(pred.raw, measure = "tpr", x.measure = "fpr")
-    auc.train.raw <- performance(pred.raw, measure = "auc")
-    auc.train.raw.val <- auc.train.raw@y.values
-    AUC_RAW[i] <- as.double(auc.train.raw.val)
-    
-}
+# Train-test split
+train.index.raw <-
+    fifa.raw$BestPos %>% createDataPartition(p = 0.75, list = FALSE)
+train.data.raw <- fifa.raw.trans[train.index.raw, ]
+test.data.raw <- fifa.raw.trans[-train.index.raw, ]
 
+# Fit the model
+model.raw <- lda(BestPos ~ ., data = train.data.raw)
+
+# Predikcie
+predictions.raw <- model.raw %>% predict(test.data.raw)
+
+## Evaluation
+# Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
+predictions.posteriors.raw <-
+    as.data.frame(predictions.raw$posterior[, 1])
+
+pred.raw <-
+    prediction(predictions.posteriors.raw, test.data.raw$BestPos)
+roc.perform.raw <-
+    performance(pred.raw, measure = "tpr", x.measure = "fpr")
+auc.train.raw <- performance(pred.raw, measure = "auc")
+auc.train.raw.val <- auc.train.raw@y.values
+AUC_RAW <- as.double(auc.train.raw.val)
+
+
+
+# ROC curve pre LDA na povodnych stlpcoch
 plot(roc.perform.raw)
 abline(a = 0, b = 1)
-text(x = .25, y = .65 , paste("AUC = ", round(mean(AUC_RAW), 3), sep = ""))
+text(x = .25, y = .65 , paste("AUC = ", round(AUC_RAW, 3), sep = ""))
 
-
-# Porovnanie modelov
-t.test(as.double(AUC_FA), AUC_RAW)
-print("Vysledok testu ukazuje, ze LDA model postaveny na nepretranformovanych datach je lepsi!")
 
 # Vizualizacia modelu na novych LD osiach
 lda.raw.viz <- as.data.frame(cbind(as.character(test.data.raw$BestPos), 
                                    predictions.raw$x, 
-                                   as.character(predictions.raw$class)))
+                                   as.character(predictions.raw$class))) 
 
 colnames(lda.raw.viz) <- c("Act_class", "LD1", "Pred_class")
-ggplot(lda.raw.viz, aes(x=LD1, y=0)) +
-    geom_point(aes(color=Act_class), position = "jitter") + 
-    scale_color_manual(values = c("CF/ST" = "green", "CM/CAM/CDM" = "blue"))
 
+lda.raw.viz <- lda.raw.viz %>% 
+        as_tibble() %>%
+        mutate(Pred_OK = as.factor(case_when(Act_class == Pred_class ~ TRUE,
+                               Act_class != Pred_class ~ FALSE)))
+lda.raw.viz
+
+lda.raw.viz %>%
+ggplot(aes(x=LD1, y=rep(0, length(LD1)))) +
+    geom_jitter(aes(color=Act_class)) + 
+    geom_jitter(data=lda.raw.viz %>%
+                    filter(Pred_OK==FALSE),
+                pch=21,
+                size=3,
+                color="red",
+                fill="red",
+                alpha=0.5) +
+    scale_color_manual(values=c("CM/ST"="black", "CM/CAM/CDM"="blue"))
+
+    
 
