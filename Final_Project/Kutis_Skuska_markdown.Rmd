@@ -1,0 +1,588 @@
+---
+title: "LDA binary classification"
+author: "Oliver Kutiš"
+output:
+  html_document:
+    df_print: paged
+---
+***
+# 1. Data exploration and dimensionality reduction
+## 1.1. Data loading and preprocessing
+
+Clear workspace and load libraries
+```{r, eval=TRUE, echo=FALSE}
+rm(list = ls())
+# Load libraries
+library(tidyverse)
+library(MASS)
+library(psych)
+library(ggbiplot)
+```
+
+**Data Source:**  [link](www.kaggle.com/bryanb/fifa-player-stats-database/version/27?select=FIFA22_official_data.csv)
+```{r, eval=TRUE, echo=TRUE}
+# Import data
+raw_data <- read_delim("FIFA22_official_data.csv")
+```
+How many unique roles/positions are in the dataset?
+```{r, echo=FALSE, eval=TRUE}
+length(unique(raw_data$`Best Position`))
+```
+***
+> **Preprocess the data**
+* we have 15 unique positions - We'd like to make that number smaller becuase many positions are very similar
+* We can divide them into following categories:
+    + Center Forward
+    + Center Midfielder
+    + Right Midfielder/Winger
+    + Left Midfielder/Winger
+    + Right Back
+    + Left Back
+    + Central Back (defender)
+    + Goalkeeper
+
+```{r}
+data <- raw_data %>%
+    # Reduction of positions
+    dplyr::mutate(
+        BestPos = factor(
+            case_when(
+                `Best Position` %in% c("CF", "ST") ~ "CF/ST",
+                `Best Position`  %in% c("CAM", "CM", "CDM") ~ "CM/CAM/CDM",
+                `Best Position` %in% c("RW", "RM") ~ "RW/RM",
+                `Best Position` %in% c("LW", "LM") ~ "LW/RM",
+                `Best Position` %in% c("RWB", "RB") ~ "RWB/RB",
+                `Best Position` %in% c("LWB", "LB") ~ "LWB/LB",
+                `Best Position` %in% c("CB") ~ "CB",
+                `Best Position` %in% c("GK") ~ "GK"
+            )
+        ),
+        Height = as.double(str_replace(Height, 'cm', '')),
+        Weight = as.double(str_replace(Weight, 'kg', '')),
+        PrefFoot = as.factor(`Preferred Foot`),
+        WeekFoot = `Weak Foot`,
+        SkillMoves = `Skill Moves`,
+        WorkRate = as.factor(`Work Rate`),
+        BodyType = factor(`Body Type`)
+    ) %>%
+    # Picking only relevant columns
+    dplyr::select(
+        Name,
+        BestPos,
+        Age,
+        PrefFoot,
+        WeekFoot,
+        SkillMoves,
+        WorkRate,
+        BodyType,
+        Height,
+        Weight,
+        Crossing,
+        Finishing,
+        HeadingAccuracy,
+        ShortPassing,
+        Volleys,
+        Dribbling,
+        Curve,
+        FKAccuracy,
+        LongPassing,
+        BallControl,
+        Acceleration,
+        SprintSpeed,
+        Agility,
+        Reactions,
+        Stamina,
+        Interceptions,
+        Balance,
+        Strength,
+        Positioning,
+        ShotPower,
+        LongShots,
+        Vision,
+        StandingTackle,
+        Jumping,
+        Aggression,
+        Penalties,
+        SlidingTackle
+    ) 
+```
+
+
+> **Choice of 2 positions to predict:**
+* To make the prediction even simpler, we will predict only Centre Forwards and Central Midfielders
+    + These two categories should be quite different and we expect LDA to perform well
+* To make the prediction simpler, we use only numeric variables, thus we exclude categorical columns
+
+```{r}
+fifa <- data %>%
+    filter(BestPos %in% c("CM/CAM/CDM", "CF/ST")) %>%
+    # Ponechame si vsak iba numericke stlpce
+    select_if(!(map(., class) %in% c("factor", "character")))
+
+# Number of NA values
+str_glue('{round(sum(is.na(fifa)) / dim(fifa)[1] * 100, 2)} %')
+
+```
+
+
+Only 3% of rows contain missing values - we can drop those
+
+```{r, include=FALSE}
+fifa <- fifa %>%
+    na.omit()
+# Contorl check of missing values
+sum(is.na(fifa))
+```
+***
+
+## 1.2. PCA
+In next step, we perform PCA to see whether it can, keep substantional amount of variance in first three Principal Components. The number 3 comes from the knowledge of the columns. They could be roughly divided into 3 categories: Offensive, Defensive and Physical attributes
+
+```{r}
+# Fit PCA on standardized and centered data
+fit <- prcomp(fifa, center = T, scale. = T)
+# Show results
+sum_pca <- summary(fit) 
+sum_pca
+```
+
+If we were to reduce the dimensionality, we would be probably satisfied with 75% variance retained (5 PCs).
+But let's make a **Scree Plot**
+```{r, eval=TRUE, echo=FALSE}
+cum_var_pca <-
+    as.vector(sort(sum_pca$importance[2, 1:10], decreasing = TRUE))
+plot(cum_var_pca, type = "l", 
+     xlab = "Principal Components", ylab = "Proportion of Variance",)
+axis(1, at=seq(1, 10), labels = as.character(seq(1, 10)))
+title("Scree Plot")
+```
+
+
+Biplot isn't very helpful in this case
+```{r, eval=TRUE, echo=FALSE}
+# Biplot skrz ggplot
+ggbiplot(
+    fit,
+    scale = 1,
+    circle = TRUE,
+    var.scale = 1,
+    var.axes = TRUE,
+    alpha = 0
+)
+```
+
+***
+## 1.3 FA
+Next we perform Factor Analysis. We know approximately how much factors we should have and we can represent players/positions with smaller number of columns. Even EA Sports (FIFA 22 producers) summarizes the different players with fewer attributes. They show you their radar plots in the game. It can be useful to determine which player to play at the positions, as there are more options usually.
+We wanna reduce the number of dimensions only to k=3 because we don't need more and assume no or only small lost of information.  
+We can see in the diagram that FA dimension reduction produces what we'd expect. We can name the dimensions (approximately) as following:
+* Offensive abilities (ML2)
+* Defensive abilities (ML1)
+* Physical attributes (ML3)
+
+In the diagram below, we can see that the attributes fit into the categories as we'd expect.
+```{r, eval=TRUE, echo=FALSE}
+fa <-
+    fa(
+        r = fifa,
+        nfactors = 3,
+        rotate = "varimax",
+        fm = "ml",
+        scores = "regression",
+        residuals = T
+    )
+
+fa.diagram(fa.results = fa)
+```
+
+
+Below, we can see absolute values of loadings
+
+```{r, eval=TRUE, echo=FALSE}
+fa.loads <- as_tibble(unclass(fa$loadings))
+fa.loads$Variable <- rownames(unclass(fa$loadings))
+fa.loads <- fa.loads  %>%
+    mutate(ML2 = abs(ML2),
+           ML1 = abs(ML1),
+           ML3 = abs(ML3))
+
+fa.l.m <- reshape2::melt(
+    fa.loads,
+    id = "Variable",
+    measure = c("ML2", "ML1", "ML3"),
+    variable.name = "Factor",
+    value.name = "Loading"
+)
+
+
+fa.l.m <- fa.l.m %>% arrange(desc(Loading))
+
+ggplot(fa.l.m, aes(Variable, abs(Loading), fill = Loading)) +
+    facet_wrap( ~ Factor, nrow = 1) + #place the factors in separate facets
+    geom_bar(stat = "identity") + #make the bars
+    coord_flip() + #flip the axes so the test names can be horizontal
+    #define the fill color gradient: blue=positive, red=negative
+    scale_fill_gradient2(
+        name = "Loading",
+        high = "blue",
+        mid = "white",
+        low = "red",
+        midpoint = 0,
+        guide = F
+    ) +
+    ylab("Loading Strength") + #improve y-axis label
+    theme_bw(base_size = 10) #use a black-and0white theme with set font size
+```
+
+
+In the **scatter matrix** we can see that the variables are approximately well divided into 3 clusters. Yes they overlap sometimes, but not substantionally. 
+```{r, eval=TRUE, echo=FALSE}
+plot(fa)
+```
+
+In the resulting residual matrix, we see that the non-diagonal values are close to zero.
+```{r, echo=FALSE, eval=TRUE}
+fa$residual
+```
+
+Obervations represented in the new (tranformed) system.  
+From our knowledge we can be pretty confident in the results. When we compare Bruno Fernandes and J.Kimmich we can see that the values correspond to what we'd expect. The first one is offensive player who scores goals, assits and could be labelled as attacking playmaker who creates a lot of chanes. The latter is more defensive player. He scores higher in defense and lower in offensive abilities. They share similar psychicality, which is again accurately displayed in the new system. 
+
+```{r, echo=FALSE, eval=TRUE}
+fifa.fa <- as_tibble(fa$scores)
+fifa.fa <-
+    cbind(data %>% filter(BestPos %in% c("CM/CAM/CDM", "CF/ST"))
+          %>% na.omit() %>% dplyr::select(Name, BestPos),
+          fifa.fa)
+
+names(fifa.fa) <- c("Name", "Pos", "Off", "Def", "Phys")
+head(fifa.fa)
+```
+
+We can visualize aggregated comparison of values for both positions. We use median because the average can be inflated by few players who have high overall ratings.   
+Reminder: 
+* "CF/ST" - Attacker, Central forward, Striker
+* "CM/CAM/CDM" - Central Attacking/Defensive (or hybrid) Midfielder  
+
+Again, the plot is meaningful. Midflieders score reasonably higher than attackers. On the contrary, attackers tend to be "tougher" as they "fight" with very strong and high defenders. Midfielders are less strong but are more agile and have better stamina. They can cover bigger area and thus are better at defending.  
+
+```{r}
+# Summarizing comparison - Barplot
+# Note that we don't have to standardize the data again.
+fifa.fa %>% 
+    dplyr::group_by(Pos) %>%
+    dplyr::summarize(Off = median(Off),
+                     Def = median(Def),
+                     Phys = median(Phys)) %>%
+    arrange(desc(Off)) %>%
+    pivot_longer(-Pos) %>%
+    ggplot(aes(x = name, y = value, fill = Pos)) +
+    geom_bar(stat = "identity", position = "dodge")
+```
+
+***
+# 2. LDA
+# 2.1. LDA on FA transformed columns  
+
+In the next step we will apply LDA on FA tranformed dataset.  
+```{r, include=FALSE}
+# Useful libs
+library(caret)
+library(ROCR)
+```
+
+Data could look more normal, but it isn't bad either.  
+The reason for the distribution in Def is that we have midfielders who are similar in this facotor to the attackers (score really low in defense). Than there are midfielders/attackers like Roberto Firmino, who have great defending as they're useful for quickly regaining control high up the pitch after loosing posession. 
+```{r. echo=FALSE, eval=TRUE}
+# Data look approximatively normal
+fifa.fa %>%
+    dplyr::select(-Name) %>%
+    pivot_longer(-Pos, names_to = "Variable", values_to = "Value") %>%
+    ggplot(aes(x = Value, y = ..density.., color = Variable)) +
+    geom_histogram(position = "identity",
+                   fill = "azure2",
+                   alpha = 1) +
+    geom_density(alpha = 1, ) +
+    facet_grid(Variable ~ .) +
+    scale_color_brewer(palette = "Spectral")
+```
+
+```{r, include=FALSE}
+# Throw out the Name col
+fifa.fa <-
+    fifa.fa %>% dplyr::select(-Name) %>% mutate(Pos = factor(Pos, levels =
+                                                                 c("CF/ST", "CM/CAM/CDM")))
+```
+
+
+**LDA on FA transformed data.**
+
+```{r}
+# Train-Test split
+train.index.fa <-
+    fifa.fa$Pos %>% createDataPartition(p = 0.75, list = FALSE)
+train.data.fa <- fifa.fa[train.index.fa,]
+test.data.fa <- fifa.fa[-train.index.fa,]
+
+# Fitni model
+model.fa <- lda(Pos ~ ., data = train.data.fa,)
+
+# Predikcie
+predictions.fa <- model.fa %>% predict(test.data.fa)
+
+## Evaluation
+# Mozeme vidiet, ze model je pomerne dobry v tom ako predikuje hodnoty!
+predictions.posteriors.fa <-
+    as.data.frame(predictions.fa$posterior[, 2])
+pred.fa <-
+    prediction(predictions.posteriors.fa, test.data.fa$Pos)
+roc.perform.fa <-
+    performance(pred.fa, measure = "tpr", x.measure = "fpr")
+auc.train.fa <- performance(pred.fa, measure = "auc")
+auc.train.fa.val <- auc.train.fa@y.values
+
+AUC_FA <- as.double(auc.train.fa.val)
+```
+
+
+ROC curve for FA - LDA
+
+```{r}
+plot(roc.perform.fa)
+title("ROC curve for FA transformed LDA predicton")
+abline(a = 0, b = 1)
+grid()
+text(x = .25, y = .65 , str_glue("AUC = {round(as.double(AUC_FA), 3)}"))
+```
+
+***
+## 2.2. LDA on not-transformed columns  
+
+```{r}
+# Data
+fifa.raw <-
+    cbind(
+        data %>%
+            filter(BestPos %in% c("CM/CAM/CDM", "CF/ST")) %>%
+            mutate(BestPos = factor(BestPos, levels = c(
+                "CM/CAM/CDM", "CF/ST"
+            )))
+        %>% na.omit() %>% dplyr::select(BestPos),
+        fifa
+    )
+# Preprocessing
+preproces.param.raw <-
+    fifa.raw %>% preProcess(method = c("center", "scale"))
+fifa.raw.trans <- preproces.param.raw %>% predict(fifa.raw)
+
+# Train-test split
+train.index.raw <-
+    fifa.raw$BestPos %>% createDataPartition(p = 0.75, list = FALSE)
+train.data.raw <- fifa.raw.trans[train.index.raw,]
+test.data.raw <- fifa.raw.trans[-train.index.raw,]
+
+# Fit the model
+model.raw <- lda(BestPos ~ ., data = train.data.raw)
+
+# Predikcie
+predictions.raw <- model.raw %>% predict(test.data.raw)
+
+# Evaluation
+predictions.posteriors.raw <-
+    as.data.frame(predictions.raw$posterior[, 1])
+
+pred.raw <-
+    prediction(predictions.posteriors.raw, test.data.raw$BestPos)
+roc.perform.raw <-
+    performance(pred.raw, measure = "tpr", x.measure = "fpr")
+auc.train.raw <- performance(pred.raw, measure = "auc")
+auc.train.raw.val <- auc.train.raw@y.values
+AUC_RAW <- as.double(auc.train.raw.val)
+```
+
+ROC Curve for raw data LDA
+
+```{r}
+plot(roc.perform.raw)
+abline(a = 0, b = 1)
+title("ROC Curve for non-transformed variables LDA prediction")
+grid()
+text(x = .25, y = .65 , paste("AUC = ", round(AUC_RAW, 3), sep = ""))
+```
+
+
+Visualization of model on new LDA transformed axis
+```{r}
+# Prepare data for visualization
+lda.raw.viz <-
+    as.data.frame(cbind(
+        as.character(test.data.raw$BestPos),
+        predictions.raw$x,
+        as.character(predictions.raw$class)
+    ))
+
+colnames(lda.raw.viz) <- c("Act_class", "LD1", "Pred_class")
+
+lda.raw.viz <- lda.raw.viz %>%
+    as_tibble() %>%
+    mutate(Pred_OK = as.factor(
+        case_when(Act_class == Pred_class ~ TRUE,
+                  Act_class != Pred_class ~ FALSE)
+    ))
+lda.raw.viz
+
+
+# Resulting visualization
+library(ggthemes)   # Themes library
+lda.raw.viz %>%
+    ggplot(aes(x = LD1, y = rep(0, length(LD1)))) +
+    geom_jitter(aes(color = Act_class)) +
+    geom_jitter(
+        data = lda.raw.viz %>%
+            filter(Pred_OK == FALSE),
+        pch = 21,
+        size = 3,
+        color = "red",
+        fill = "red",
+        alpha = 0.5
+    ) +
+    scale_color_manual(name= "Skutočné hodnoty",
+                       values = c("CM/ST" = "darkgrey", "CM/CAM/CDM" = "blue"),
+                       ) +
+    theme_economist() + 
+    labs(y = "Jittered 1D",
+         title = "Positions of observations on LDA transformed axis"
+    ) + 
+    theme(
+        # Parametre osi
+        axis.ticks.y = element_blank(),
+        axis.line = element_line(color="black"),
+        axis.text = element_blank(),
+        # Grid prec
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.title = element_text(size=15)
+    ) +
+    # Zvacsi velkosti v legende
+    guides(
+        colour = guide_legend(override.aes = list(size=7))
+        )
+```
+
+**Confusion Matrix**
+
+```{r}
+confusion.mx <- confusionMatrix(
+    data = as.factor(lda.raw.viz$Pred_class),
+    reference = as.factor(lda.raw.viz$Act_class),
+    dnn = c("Prediction", "Reference"),
+)
+confusion.mx
+```
+
+***
+# 3. Which method is better?
+
+To this point, we produced two LDA classifications. One for FA transformed data and one for not transformed data. From results it seems that the latter performs better. But still, we should verify wheter it does.  
+
+We will create 100 runs of both classifications, get AUC and compare these two with t-test.
+
+## 3.1. FA transformed LDA classification - 100 runs
+
+```{r}
+# seed
+set.seed(123)
+
+AUC_FA <- rep(0, 100) # Empty vector for storing results of classification.
+for (i in 1:1000) {
+    # Train-Test split
+    train.index.fa <-
+        fifa.fa$Pos %>% createDataPartition(p = 0.75, list = FALSE)
+    train.data.fa <- fifa.fa[train.index.fa,]
+    test.data.fa <- fifa.fa[-train.index.fa,]
+    
+    # Fit the model
+    model.fa <- lda(Pos ~ ., data = train.data.fa,)
+    
+    # Predikcie
+    predictions.fa <- model.fa %>% predict(test.data.fa)
+    
+    # Evaluation
+    predictions.posteriors.fa <-
+        as.data.frame(predictions.fa$posterior[, 2])
+
+    pred.fa <-
+        prediction(predictions.posteriors.fa, test.data.fa$Pos)
+    roc.perform.fa <-
+        performance(pred.fa, measure = "tpr", x.measure = "fpr")
+    auc.train.fa <- performance(pred.fa, measure = "auc")
+    auc.train.fa.val <- auc.train.fa@y.values
+    
+    # Save the results to vector of AUC values for FA transformed LDA
+    AUC_FA[i] <- as.double(auc.train.fa.val)
+}
+```
+
+***
+## 3.2.Non-transformed LDA classification - 100 runs  
+(it can take longer as there are more columns)
+```{r}
+
+AUC_RAW <- rep(0, 100) # Empty vector for storing results of classification.
+for (i in 1:1000) {
+    # Preprocessing
+    preproces.param.raw <-
+        fifa.raw %>% preProcess(method = c("center", "scale"))
+    fifa.raw.trans <- preproces.param.raw %>% predict(fifa.raw)
+    
+    # Train-test split
+    train.index.raw <-
+        fifa.raw$BestPos %>% createDataPartition(p = 0.75, list = FALSE)
+    train.data.raw <- fifa.raw.trans[train.index.raw, ]
+    test.data.raw <- fifa.raw.trans[-train.index.raw, ]
+
+    # Fit the model
+    model.raw <- lda(BestPos ~ ., data = fifa.raw.trans)
+
+    # Predictions
+    predictions.raw <- model.raw %>% predict(test.data.raw)
+
+    # Evaluation
+    predictions.posteriors.raw <-
+        as.data.frame(predictions.raw$posterior[, 1])
+
+    pred.raw <-
+        prediction(predictions.posteriors.raw, test.data.raw$BestPos)
+    
+    roc.perform.raw <-
+        performance(pred.raw, measure = "tpr", x.measure = "fpr")
+    auc.train.raw <- performance(pred.raw, measure = "auc")
+    auc.train.raw.val <- auc.train.raw@y.values
+    
+    # Save the results to vector of AUC values 
+    AUC_RAW[i] <- as.double(auc.train.raw.val)
+}
+```
+***
+## 3.3 Paired T-test: Is model with not-transformed columns better then the one with FA transformed columns?
+
+
+```{r, echo=FALSE, eval=TRUE}
+library(BSDA)
+library(latex2exp)
+AUC_FA.vec <- as.double(AUC_FA)
+AUC_RAW.vec <- as.double(AUC_RAW)
+t.test <- t.test(x=AUC_FA,y= AUC_RAW, paired=TRUE, alternative="less")
+str_glue("\t Paited t-test\t\n\n")
+str_glue("\nH0: mu_1 - mu_2 >= 0\n")
+str_glue("H1: mu_1 - mu_2 < 0\n\n")
+str_glue("Data: {t.test$data[1]}\n\n")
+str_glue("t = {t.test$statistic},\ndf = {t.test$parameter}, \np-value ~= {format(t.test$p.value, scientific=TRUE)}\n\n")
+str_glue("Confidence Interval (95%):\t\t ({t.test$conf.int[1][1]}, {t.test$conf.int[1][2]})\n\n")
+str_glue("Estimated mean of the differences: \t{t.test$estimate}")
+
+
+```
+
+
+
