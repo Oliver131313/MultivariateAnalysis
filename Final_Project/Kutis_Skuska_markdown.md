@@ -1,5 +1,5 @@
 ---
-title: "LDA binary classification"
+title: "Binary classification of football player's positions using LDA"
 author: "Oliver Kutiš"
 subtitle: Multivariate statistical methods assignement
 output:
@@ -12,6 +12,20 @@ output:
   pdf_document: default
 ---
 ***
+# Introduction
+The goal of this document is to show how LDA can be used to classify FIFA 22 player's positions.
+FIFA 22 is a popular football simulator. This game is enjoyed by milions of people and player's abilities in the simulator are documented pretty accurately.  
+
+
+We reduce the classification with LDA technique only to a binary classification because it is easier for illustration and easier to interpret. Additionally we use two different approaches:
+
+1. We transform the data with Factor Analysis and then use LDA for classification
+2. We only standardize the data and then run LDA
+
+After this we compare models with multiples techniques to show which performs better.
+
+
+
 # 1. Data exploration and dimensionality reduction
 ## 1.1. Data loading and preprocessing
 
@@ -288,7 +302,7 @@ In the resulting residual matrix, we see that the non-diagonal values are close 
 **Obervations represented in the new (tranformed) system.**
 
 
-From our knowledge we can be pretty confident in the results. When we compare Bruno Fernandes and J.Kimmich we can see that the values correspond to what we'd expect. The first one is offensive player who scores goals, assits and could be labelled as attacking playmaker who creates a lot of chanes. The latter is more defensive player. He scores higher in defense and lower in offensive abilities. They share similar psychicality, which is again accurately displayed in the new system. 
+From our knowledge we can be pretty confident in the results. When we compare Bruno Fernandes and J.Kimmich we can see that the values correspond to what we'd expect. The first one is offensive player who scores goals, assits and could be labelled as attacking playmaker who creates a lot of chanes. The latter is more defensive player. He scores higher in defense and lower in offensive abilities. They share similar physicality, which is again accurately displayed in the new system. 
 
 <div class="kable-table">
 
@@ -441,26 +455,26 @@ confusion.mx
 ## 
 ##             Reference
 ## Prediction   CF/ST CM/CAM/CDM
-##   CF/ST        634         33
-##   CM/CAM/CDM    18       1084
+##   CF/ST        637         36
+##   CM/CAM/CDM    15       1081
 ##                                           
 ##                Accuracy : 0.9712          
 ##                  95% CI : (0.9623, 0.9785)
 ##     No Information Rate : 0.6314          
-##     P-Value [Acc > NIR] : < 2e-16         
+##     P-Value [Acc > NIR] : < 2.2e-16       
 ##                                           
-##                   Kappa : 0.9384          
+##                   Kappa : 0.9385          
 ##                                           
-##  Mcnemar's Test P-Value : 0.04995         
+##  Mcnemar's Test P-Value : 0.005101        
 ##                                           
-##             Sensitivity : 0.9724          
-##             Specificity : 0.9705          
-##          Pos Pred Value : 0.9505          
-##          Neg Pred Value : 0.9837          
+##             Sensitivity : 0.9770          
+##             Specificity : 0.9678          
+##          Pos Pred Value : 0.9465          
+##          Neg Pred Value : 0.9863          
 ##              Prevalence : 0.3686          
-##          Detection Rate : 0.3584          
-##    Detection Prevalence : 0.3770          
-##       Balanced Accuracy : 0.9714          
+##          Detection Rate : 0.3601          
+##    Detection Prevalence : 0.3804          
+##       Balanced Accuracy : 0.9724          
 ##                                           
 ##        'Positive' Class : CF/ST           
 ## 
@@ -577,3 +591,42 @@ for (i in 1:100) {
 
 
 
+
+
+**Other tests commonly used to compare two AUCs**
+
+<div class="kable-table">
+
+|  AUC - FA| AUC - RAW| p-value|Method                            |H_1                  |
+|---------:|---------:|-------:|:---------------------------------|:--------------------|
+| 0.9832318| 0.9958464|   1e-07|Bootstrap test for two ROC curves |AUC - FA < AUC - RAW |
+| 0.9832318| 0.9958464|   1e-07|DeLong's test for two ROC curves  |AUC - FA < AUC - RAW |
+
+</div>
+**Resulting ROC curves of the two models**
+
+![](Kutis_Skuska_markdown_files/figure-html/unnamed-chunk-32-1.png)<!-- -->
+
+# Conclusion
+
+We can tell that both models perform exceptionally well when making predictions.
+The model with FA transformed data is worse that the one not transformed with FA. However the difference is very small and both models are pretty good.
+The difference shows us that the LDA transformation of original data is more effective than combination of FA and LDA.
+The reason for this is that LDA already has the trait that it finds transformation which can distinguish the target variable's values the best based on the data provided. 
+
+
+The main purpose was to illustrate different techniques for preparation and transformation of data for classification. 
+We used Factor Analysis to reduce the number of columns. This technique can be useful for data analysis of the differences between different positions of players and their corresponding traits. We reduced big number only to three columns with good effectivity. Note that it sometimes requires previous knowledge about the subject to determine number of columns to be obtained. Otherwise, we can use PCA for this purpose. If were to expand this analysis, we could use the FA transformed data and show which attributes make for good player on different positions.
+
+Next we showed that LDA tranformation is very useful tool to further distinguish between the different abilities of players playing on different positions. However, it would be hard to interpret the results of LDA transformation because it returns only one column. Yes, we could tell why some players are better suited for the position than others but without much insight. On the other hand, LDA is better suited for classification and if there was the need to classify player's positions based on diffrent attributes, LDA is the technique that should be considered.
+
+
+
+
+
+**Citation of pROC library:**
+
+[1] Xavier Robin, Natacha Turck, Alexandre Hainard, Natalia Tiberti, Frédérique
+  Lisacek, Jean-Charles Sanchez and Markus Müller (2011). pROC: an open-source
+  package for R and S+ to analyze and compare ROC curves. BMC Bioinformatics, 12, p.
+  77.  DOI: 10.1186/1471-2105-12-77 <http://www.biomedcentral.com/1471-2105/12/77/>
