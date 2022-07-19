@@ -56,7 +56,7 @@ NewCoordinate <- predict(p, newdata = Countries)
 NewCoordinate[, 1:3]
 
 # 9
-githubinstall::gh_install_packages("vqv/ggbiplot")
+#githubinstall::gh_install_packages("vqv/ggbiplot")
 library(ggbiplot)
 
 stan_p <- p$rotation * p$sdev

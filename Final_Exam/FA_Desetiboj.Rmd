@@ -1,0 +1,206 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+V tomto texte budeme vyuzivat Faktorovu analyzu na posudenie faktorov, ktore boli klucove pre vitazstvo v desatboji na letnej olympiade v roku 2004. Premennymi su bodove hodnotenia jednotlivych disciplin a pozorovaniami su jednotlivi pretekari.
+
+```{r, include=FALSE}
+rm(list = ls())
+```
+
+# 1. Manipulacia dat
+
+Kniznice a data
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(psych)
+library(readxl)
+library(DescTools)
+library(ellipse)
+library(car)
+
+
+desetiboj <- read_excel("Desetiboj.xlsx")
+# Zbavenie sa chybajucich, resp. nulovych hodnot
+desetiboj[desetiboj==0] <- NA
+desetiboj <- desetiboj %>% na.omit()
+
+# Ukaz data
+desetiboj
+```
+Vytvorenie tabulky vysledneho poradia
+
+```{r}
+poradi <- as_tibble(cbind(desetiboj[, 1], rowSums(desetiboj[, -1])))
+# Zmena nazvu stlpcu
+names(poradi) <- c("Mena", "Body")
+
+poradi <- poradi %>% na.omit() %>% arrange(desc(Body))
+
+poradi
+```
+
+# 2. Korelacie
+
+```{r}
+# Korelacna matice
+x <- cor(desetiboj[, -1], use = "pairwise.complete.obs")
+x
+
+```
+Vizualizacia korelacii - vidime, ze premenne spolu viac ci menej koreluju. Vacsina korelacii je pozitivnych ale pozorujeme aj negativne. Pozitivne korelacie davaju zmysel. Tie negativne taktiez, pretoze je logicke, ze ti, ktorym sa darilo pri silovych disciplinach budu na tom horsie pri vytrvalostnych, napr. beh na 1500m a hod diskom koreluju negativne. Ten kto lepsie/horsie hadze diskom bude horsi/lepsi pri vytrvalostnom behu.
+
+Osobne by som zvolil pocet faktorov iba na k=2, resp. k=3. Discipliny sa daju zhruba rozdelit na: rychlostne, vytrvalostne, silove/obratnostne. Najprv vsak vykoname PCA a zistime ci je tento predopklad rozumny.
+
+```{r}
+PlotCorr(x)
+
+```
+# 3. PCA - vyber poctu faktorov
+
+```{r}
+p <- prcomp(x = desetiboj[, -1], center = T, scale. = T)
+
+plot(p, type="l", main="Scree Plot")
+```
+
+
+Ak by sme pocet dimenzii zredukovali iba na k=3, tak by sme stratili pomerne velku cast informacii (zhruba 30%). Za to k=4 alebo 5 sa zda byt pomerne rozumnou volbou. Treba mat vsak napamati, ze FA nemaximalizuje rozptylovu maticu ale korelacnu maticu a preto je mozne, ze pri k=3 faktoroch, bude FA data reprezentovat data dobre.
+
+```{r}
+print(summary(p))
+```
+# 4. FA 
+
+Data nemusime standardizovat, pretoze body z jednotlivych disciplin su na rovnakej skale.
+4 faktory sa zda byt vela, pretoze posledny faktor nevykazuje asociaciu so ziadnou premennou.
+
+```{r}
+f1 <-
+    fa(
+        r = desetiboj[, -1],
+        nfactors = 4,
+        rotate = "varimax",
+        fm = "ml",
+        scores = "regression",
+        residuals = TRUE
+    )
+
+fa.diagram(f1)
+```
+
+
+## 4.1 FA za pouzitia k=3 faktorov
+
+```{r}
+f2 <-
+    fa(
+        r = desetiboj[, -1],
+        nfactors = 3,
+        rotate = "varimax",
+        fm = "ml",
+        scores = "regression",
+        residuals = TRUE
+    )
+
+fa.diagram(f2)
+```
+
+
+
+Graf nizsie naznacuje, ze k=3 pocet faktorov je akurat a premenne su rozdelene do rozdielnych clustrov.
+
+```{r}
+plot(f2)
+```
+
+
+Bolo zanechanych iba 60% variability pri pouziti k=3 faktorov. Pri pouziti 4 faktorov sa to o moc nezvysi a pri pouziti k=5 vyrastie % zachovanej variability na 70, avsak tento pocet faktorov je skutocne zbytocny
+
+```{r}
+f2$loadings
+```
+
+Vysledky faktorovej analyzy pri pouziti k=3 faktorov. 
+
+Podla sily vztahu mozme povedat, ze faktor ML2 je spojeny predovsetkym s disciplinami, ktore vyzaduju rychlost a dynamickost pretekara. ML1 faktor je asociovany predovsetkym s vytrvalostou a faktor ML3 predovsetkym s disciplinami, ktore su technicky narocnejsie a vyzaduju viac sily. Podobne vysledky by sme obdrzali ak by sme vizualizovali vahy.
+
+```{r}
+fa.loads <- as_tibble(unclass(f2$loadings))
+fa.loads$Variable <- rownames(unclass(f2$loadings))
+fa.loads <- fa.loads  %>%
+    mutate(ML2 = abs(ML2),
+           ML1 = abs(ML1),
+           ML3 = abs(ML3))
+
+fa.l.m <- reshape2::melt(
+    fa.loads,
+    id = "Variable",
+    measure = c("ML2", "ML1", "ML3"),
+    variable.name = "Factor",
+    value.name = "Loading"
+)
+
+
+fa.l.m <- fa.l.m %>% arrange(desc(Loading))
+
+ggplot(fa.l.m, aes(Variable, abs(Loading), fill = Loading)) +
+    facet_wrap( ~ Factor, nrow = 1) + #place the factors in separate facets
+    geom_bar(stat = "identity") + #make the bars
+    coord_flip() + #flip the axes so the test names can be horizontal
+    #define the fill color gradient: blue=positive, red=negative
+    scale_fill_gradient2(
+        name = "Loading",
+        high = "blue",
+        mid = "white",
+        low = "red",
+        midpoint = 0,
+        guide = "none"
+    ) +
+    ylab("Loading Strength") + #improve y-axis label
+    theme_bw(base_size = 10) #use a black-and0white theme with set font size
+```
+
+
+
+Matica rezidui - idealne by bolo ak by na diagonale boli pritomne nuly. (Dole je zobrazena prave diagonala)
+Hodnoty unicit nie su idealne ale pri pouziti viacerych faktorov sa taktiez o moc nezlepsia a vacsi pocet faktorov sa zda byt zbytocny.
+
+```{r}
+f2$uniquenesses
+
+```
+
+## 4.2 Zaver
+
+Roman Sebrle vyhral desetiboj v roku 2004 najma vdaka vynikajucim vykonom v silovych disciplinach. Dolezite bolo aj to, ze Roman nemal prilis zly vysledok behu na 1500m a pri rychlostno-dynamickych disciplinach patril medzi relativne dobrych pretekarov. 
+
+Pri desatboji je najdolezitejsou vlastnostou aby pretekar dokazal konkurovat v kazdej discipline a vyrazne nezaostaval. Roman sice nebol vynikajuci pri behu na 1500m ale vzhladom k tomu, ze sa jedna iba o jednu disciplinu, ho to prilis bodovo "nebolelo" a stale ziskal pomerne dost bodov. Roman vynikal prevazne v silovych disiplinach, kde ziskal najviac bodov ale jeho dynamika a rychlost netrpela tym, ze Roman bol silnejsi a to je velmi dolezite. Romanovi najblizsi konkurenti boli horsi silovo aj vytrvalostne. Obom najblizsim konkurentom by prospelo zapracovat na silovej aj vytrvalostnej stranke, pretoze na ukor svojej skvelej dynamickosti stratili dolezite body na vitazstvo najma pri spominanych silovych disciplinach. 
+
+```{r}
+deset.new <-as_tibble(cbind(desetiboj[, 1], f2$scores))
+names(deset.new) <- c("Mena", "Rychlost_Dynamika", "Sila", "Vytrvalost")
+
+deset.new <- deset.new %>% plyr::join(poradi, by="Mena") %>% arrange(desc(Body))
+
+deset.new
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
